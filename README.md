@@ -12,6 +12,10 @@ Our goal is to make grocery management easier, reduce unnecessary food waste, an
 
 - Iryna Kovalenko
 - Mohd Ramzan
+- Alex Kuznetsov
+- Vaibhav Paranji
+- Mikkel Serrantes
+- Tyler Todd
 
 ## Project Goals
 
