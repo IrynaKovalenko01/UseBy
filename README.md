@@ -2,7 +2,7 @@
 
 UseBy is an iPhone app that helps students and people in shared apartments use their food before it expires. Scan a grocery barcode, and UseBy fills in an estimated expiration date from USDA shelf-life data, reminds you before the item goes bad, and suggests recipes ranked by what's expiring soonest.
 
-📄 **Living Document:** 
+📄 **Living Document:** https://docs.google.com/document/d/1Wj61WjFDm5TRLiOZKD9-bY41K7WJUOSo-l7MK2vbJMk/edit?usp=sharing
 
 ## Goals
 
