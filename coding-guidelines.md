@@ -1,4 +1,4 @@
-12. Coding Guideline
+12. Coding Guidelines
 
 In order to code UseBy for iOS devices, Swift will be used to code the application. This includes both SwiftUI and SwiftData.
 Here are the links for the coding guidelines that will be used by the team:
