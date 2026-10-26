@@ -10,6 +10,7 @@ enum StorageLocation: String, CaseIterable, Identifiable {
 }
 
 enum Urgency {
+    case expired
     case urgent
     case soon
     case safe
@@ -46,7 +47,9 @@ final class PantryItem {
     }
 
     // Red = 2 days or less, yellow = within a week, green = safe
+    // Purple = expired?
     var urgency: Urgency {
+        if daysLeft < 0 { return .expired}
         if daysLeft <= 2 { return .urgent }
         if daysLeft <= 7 { return .soon }
         return .safe

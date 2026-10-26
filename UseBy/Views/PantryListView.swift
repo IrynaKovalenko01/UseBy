@@ -4,6 +4,7 @@ import SwiftData
 extension Urgency {
     var color: Color {
         switch self {
+        case .expired: .purple
         case .urgent: .red
         case .soon: .yellow
         case .safe: .green
