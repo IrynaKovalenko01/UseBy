@@ -67,10 +67,10 @@ struct SpoonacularRecipeInformation: Decodable, Identifiable {
     let extendedIngredients: [SpoonacularIngredient]?
 }
 
-/// Alex's key: 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
+/// ASK ALEX FOR KEY AND HE WILL GIVE IT TO YOU
 struct SpoonacularAPI {
     private let baseURL = "https://api.spoonacular.com"
-    private let apiKey = "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"
+    private let apiKey = "ASK ALEX AND HE WILL GIVE IT TO YOU"
     private let session: URLSession
 
     init(session: URLSession = .shared) {
