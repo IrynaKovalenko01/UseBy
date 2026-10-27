@@ -51,3 +51,32 @@ struct PantryItemTests {
         #expect(item.storage == .fridge)
     }
 }
+
+
+// Mo - additional coverage with in-memory SwiftData context
+@Suite("PantryItem storage and daysLeft")
+struct PantryItemStorageTests {
+
+    private func makeItem(daysFromNow: Int) throws -> PantryItem {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: PantryItem.self, configurations: config)
+        let context = ModelContext(container)
+        let expiry = Calendar.current.date(byAdding: .day, value: daysFromNow, to: .now)!
+        let item = PantryItem(name: "Test", category: "Produce", storage: .fridge,
+                              quantity: 1, expiryDate: expiry)
+        context.insert(item)
+        return item
+    }
+
+    @Test func invalidStorageRawDefaultsToFridge() throws {
+        let item = try makeItem(daysFromNow: 5)
+        item.storageRaw = "NotAPlace"
+        #expect(item.storage == .fridge)
+    }
+
+    @Test func freezerStorageRoundTrips() throws {
+        let item = try makeItem(daysFromNow: 30)
+        item.storageRaw = StorageLocation.freezer.rawValue
+        #expect(item.storage == .freezer)
+    }
+}
