@@ -9,7 +9,7 @@ enum StorageLocation: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-enum Urgency {
+enum Urgency : Equatable {
     case urgent
     case soon
     case safe
