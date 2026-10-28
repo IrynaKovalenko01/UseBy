@@ -9,20 +9,7 @@ enum StorageLocation: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-/// Defines how an item's amount is measured.
-///
-/// Recreate the data model with this type when the app must distinguish a
-/// countable item (for example, three apples) from a weighed item. The raw
-/// values are presentation labels for the edit form, and id makes the cases
-/// safe to use in SwiftUI's ForEach and Picker.
-enum ItemAmountKind: String, CaseIterable, Identifiable {
-    case quantity = "Quantity"
-    case weight = "Weight"
-
-    var id: String { rawValue }
-}
-
-enum Urgency {
+enum Urgency : Equatable {
     case urgent
     case soon
     case safe
