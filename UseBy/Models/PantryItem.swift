@@ -29,7 +29,6 @@ final class PantryItem {
     var category: String
     var storageRaw: String
     var quantity: Int
-    var weightGrams: Double?
     var barcode: String?
     var expiryDate: Date
     var addedDate: Date
@@ -45,7 +44,6 @@ final class PantryItem {
         category: String,
         storage: StorageLocation,
         quantity: Int,
-        weightGrams: Double? = nil,
         barcode: String? = nil,
         expiryDate: Date
     ) {
@@ -53,7 +51,6 @@ final class PantryItem {
         self.category = category
         self.storageRaw = storage.rawValue
         self.quantity = quantity
-        self.weightGrams = weightGrams
         self.barcode = barcode
         self.expiryDate = expiryDate
         self.addedDate = .now
@@ -63,11 +60,6 @@ final class PantryItem {
     /// Fall back to fridge if an older or corrupted record has an unknown value.
     var storage: StorageLocation {
         StorageLocation(rawValue: storageRaw) ?? .fridge
-    }
-
-    /// Derives the edit form's measurement mode from the optional stored weight.
-    var amountKind: ItemAmountKind {
-        weightGrams == nil ? .quantity : .weight
     }
 
     var daysLeft: Int {
