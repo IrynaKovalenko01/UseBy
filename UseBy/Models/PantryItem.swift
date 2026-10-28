@@ -10,6 +10,7 @@ enum StorageLocation: String, CaseIterable, Identifiable {
 }
 
 enum Urgency : Equatable {
+    case expired
     case urgent
     case soon
     case safe
@@ -45,8 +46,9 @@ final class PantryItem {
         return calendar.dateComponents([.day], from: today, to: expiry).day ?? 0
     }
 
-    // Red = 2 days or less, yellow = within a week, green = safe
+    // Purple = expired, red = 0–2 days, yellow = 3–7 days, green = 8+ days
     var urgency: Urgency {
+        if daysLeft < 0 {return .expired}
         if daysLeft <= 2 { return .urgent }
         if daysLeft <= 7 { return .soon }
         return .safe
