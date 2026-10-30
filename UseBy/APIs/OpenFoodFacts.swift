@@ -3,8 +3,6 @@ import Foundation
 import FoundationNetworking
 #endif
 
-// MARK: - Public models
-
 struct OFFProductResponse: Decodable {
     let status: Int?
     let statusVerbose: String?
