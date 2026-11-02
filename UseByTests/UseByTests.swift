@@ -1,61 +1,82 @@
-//
-//  UseByTests.swift
-//  UseByTests
-//
-//  Created by ikoval2 on 10/19/26.
-//  Editing + Changes by Tyler 10/26/26
-//
+// Mohd Ramzan
 
 import Testing
 import Foundation
+import SwiftData
 @testable import UseBy
 
-// ensures the code always runs from main, specifically it'll test the files these run on
-@MainActor
+@Suite("PantryItem urgency logic")
+struct PantryItemTests {
 
-
-struct UseByTests {
-
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-        // Swift Testing Documentation
-        // https://developer.apple.com/documentation/testing
+    // Creates an in-memory PantryItem so tests don't touch disk
+    private func makeItem(name: String = "Test", daysFromNow: Int) throws -> PantryItem {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: PantryItem.self, configurations: config)
+        let context = ModelContext(container)
+        let expiry = Calendar.current.date(byAdding: .day, value: daysFromNow, to: .now)!
+        let item = PantryItem(
+            name: name,
+            category: "Dairy",
+            storage: .fridge,
+            quantity: 1,
+            expiryDate: expiry
+        )
+        context.insert(item)
+        return item
     }
 
-    // By Tyler 10/26/26
-    // we'll do one test, let's just do an apple that expires x days from now
-    func item(expiringIn days: Int) -> PantryItem {
-        // lets just say it expires today
-        var expiration = Date.now
-        // let's us add a random x number of days to get a expiration date,
-        // (won't fail because we pick the date)
-        if let date = Calendar.current.date(byAdding: .day, value: days, to: .now){
-            expiration = date
-        }
-        return PantryItem(name: "Apple", category: "Produce", storage: .fridge,
-       quantity: 1, expiryDate: expiration)
+    @Test func itemExpiringTodayIsUrgent() throws {
+        let item = try makeItem(daysFromNow: 0)
+        #expect(item.urgency == .urgent)
     }
 
-    // 4 tests for each of our different urgencies (see PantryItem urgeny cases)
-
-    // Apple is expired, should show up (Purple?)
-    @Test func appleExpired(){
-        #expect(item(expiringIn: -1).urgency == .expired)
+    @Test func itemExpiringInTwoDaysIsUrgent() throws {
+        let item = try makeItem(daysFromNow: 2)
+        #expect(item.urgency == .urgent)
     }
 
-    // Apple has 2 days left, red/urgent 
-    @Test func appleUrgent(){
-        #expect(item(expiringIn: 2).urgency == .urgent)
+    @Test func itemExpiringInFiveDaysIsSoon() throws {
+        let item = try makeItem(daysFromNow: 5)
+        #expect(item.urgency == .soon)
     }
 
-    // Apple has 7 days left, yellow/soon
-    @Test func appleSoon(){
-        #expect(item(expiringIn: 3).urgency == .soon)
-        #expect(item(expiringIn: 7).urgency == .soon)
+    @Test func itemExpiringInTenDaysIsSafe() throws {
+        let item = try makeItem(daysFromNow: 10)
+        #expect(item.urgency == .safe)
     }
 
-    // Apple has more than 8 days, safe/green
-    @Test func appleSafe(){
-         #expect(item(expiringIn: 8).urgency == .safe)
+    @Test func invalidStorageRawDefaultsToFridge() throws {
+        let item = try makeItem(daysFromNow: 5)
+        item.storageRaw = "NotAPlace"
+        #expect(item.storage == .fridge)
+    }
+}
+
+
+// Mo - additional coverage with in-memory SwiftData context
+@Suite("PantryItem storage and daysLeft")
+struct PantryItemStorageTests {
+
+    private func makeItem(daysFromNow: Int) throws -> PantryItem {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: PantryItem.self, configurations: config)
+        let context = ModelContext(container)
+        let expiry = Calendar.current.date(byAdding: .day, value: daysFromNow, to: .now)!
+        let item = PantryItem(name: "Test", category: "Produce", storage: .fridge,
+                              quantity: 1, expiryDate: expiry)
+        context.insert(item)
+        return item
+    }
+
+    @Test func invalidStorageRawDefaultsToFridge() throws {
+        let item = try makeItem(daysFromNow: 5)
+        item.storageRaw = "NotAPlace"
+        #expect(item.storage == .fridge)
+    }
+
+    @Test func freezerStorageRoundTrips() throws {
+        let item = try makeItem(daysFromNow: 30)
+        item.storageRaw = StorageLocation.freezer.rawValue
+        #expect(item.storage == .freezer)
     }
 }

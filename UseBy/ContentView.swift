@@ -9,10 +9,10 @@ struct ContentView: View {
                     Label("Pantry", systemImage: "refrigerator")
                 }
 
-            ComingSoonView(
-                title: "Scan",
-                message: "Barcode scanning is coming soon. Tap + on the Pantry tab to add items."
-            )
+            // ScanProductView owns the camera-to-add-form workflow. Keeping it as
+            // the tab root makes barcode entry available alongside manual Pantry
+            // entry and preserves its scanner session while the tab is selected.
+            ScanProductView()
             .tabItem {
                 Label("Scan", systemImage: "barcode.viewfinder")
             }
