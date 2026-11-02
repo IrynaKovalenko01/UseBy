@@ -61,6 +61,7 @@ struct AddItemView: View {
 
                 DatePicker("Use by", selection: $expiryDate, displayedComponents: .date)
             }
+            .appBackground()
             .navigationTitle("Add Item")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

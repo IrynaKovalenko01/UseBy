@@ -37,6 +37,7 @@ struct ItemDetailView: View {
                 }
             }
         }
+        .appBackground()
         .navigationTitle(item.name)
         .sheet(isPresented: $showingEdit) {
             EditItemView(item: item)
