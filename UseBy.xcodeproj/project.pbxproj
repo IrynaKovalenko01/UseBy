@@ -130,6 +130,9 @@
 			dependencies = (
 				B826090F3086AE3D002B9C66 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				CE58261F3092AC7300315E9A /* UseByTests */,
+			);
 			name = UseByTests;
 			packageProductDependencies = (
 			);
