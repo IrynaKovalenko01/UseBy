@@ -29,23 +29,6 @@
 		B82609173086AE3D002B9C66 /* UseByUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UseByUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		CE5826243092AEEA00315E9A /* Exceptions for "UseByTests" folder in "UseBy" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				UseByTests.swift,
-			);
-			target = B82608FD3086AE3A002B9C66 /* UseBy */;
-		};
-		CE5826253092AEEA00315E9A /* Exceptions for "UseByTests" folder in "UseByTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				UseByTests.swift,
-			);
-			target = B826090C3086AE3D002B9C66 /* UseByTests */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B82609003086AE3A002B9C66 /* UseBy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -59,10 +42,6 @@
 		};
 		CE58261F3092AC7300315E9A /* UseByTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				CE5826243092AEEA00315E9A /* Exceptions for "UseByTests" folder in "UseBy" target */,
-				CE5826253092AEEA00315E9A /* Exceptions for "UseByTests" folder in "UseByTests" target */,
-			);
 			path = UseByTests;
 			sourceTree = "<group>";
 		};
@@ -130,7 +109,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				B82609003086AE3A002B9C66 /* UseBy */,
-				CE58261F3092AC7300315E9A /* UseByTests */,
 			);
 			name = UseBy;
 			packageProductDependencies = (
@@ -174,6 +152,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				B826091A3086AE3D002B9C66 /* UseByUITests */,
+				CE58261F3092AC7300315E9A /* UseByTests */,
 			);
 			name = UseByUITests;
 			packageProductDependencies = (
@@ -431,7 +410,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.useby.UseBy;
+				PRODUCT_BUNDLE_IDENTIFIER = "---com.iryna.UseBy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -464,7 +443,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.useby.UseBy;
+				PRODUCT_BUNDLE_IDENTIFIER = "---com.iryna.UseBy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
