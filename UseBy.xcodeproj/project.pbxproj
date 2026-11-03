@@ -155,7 +155,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				B826091A3086AE3D002B9C66 /* UseByUITests */,
-				CE58261F3092AC7300315E9A /* UseByTests */,
 			);
 			name = UseByUITests;
 			packageProductDependencies = (
