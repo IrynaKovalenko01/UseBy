@@ -58,7 +58,6 @@ struct EditItemView: View {
                     }
                 }
             }
-            .appBackground()
             .navigationTitle("Edit Item")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

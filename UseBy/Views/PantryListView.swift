@@ -39,7 +39,6 @@ struct PantryListView: View {
                     }
                 }
             }
-            .appBackground()
             .navigationTitle("Pantry")
             .toolbar {
                 Button {

@@ -25,7 +25,6 @@ struct ContentView: View {
                 Label("Cook", systemImage: "fork.knife")
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -40,7 +39,6 @@ struct ComingSoonView: View {
                 systemImage: "hammer",
                 description: Text(message)
             )
-            .appBackground()
             .navigationTitle(title)
         }
     }
