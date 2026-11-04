@@ -45,6 +45,50 @@ UseBy/
 
 Swift and SwiftUI, SwiftData for on-device storage, VisionKit for barcode scanning, the Open Food Facts API for product lookup, USDA FoodKeeper data for shelf life, and the Spoonacular API for recipes.
 
+## Requirements 
+
+A mac with the most recent version of Xcode or at least version 26.4
+
+##  How to Build
+
+```bash
+git clone https://github.com/IrynaKovalenko01/UseBy.git
+cd UseBy
+open UseBy.xcodeproj
+```
+
+Or just open the folder for UseBy on Xcode itself. Then you can click around and select what files you want to work with or test
+
+## How to Run
+
+With an iPhone simulator selected, press play or run it with (Command + R). The app will open up on the simulator.
+
+- **Pantry Tab:** Add items with the "+" button, or tap an item already shown for details.
+
+- **Scan Tab:** Barcode scanning needs a working iPhone camera with permissions enabled, if you're using the simulator just use manual entry.
+
+- **Cook Tab:** Reccipes on the website come from the Spoonacular API, which requires a API key (it's free). Get one paste it into the 'apiKey' in 'UseBy/APIs/Spoonacular.swift.' Without a key the cook tab will just show an error.
+
+## How to Test (command line)
+
+The same command CI runs:
+
+```bash
+xcodebuild test \
+  -project UseBy.xcodeproj \
+  -scheme UseBy \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:UseByTests \
+  CODE_SIGNING_ALLOWED=NO
+```
+## Bug Tracking
+
+We track bugs and tasks with **GitHub Issues**
+
+- **Reporting A Bug:** Open a new issue with steps to reproduce, what you expected, and what happened. Just add a bug label to it.
+
+- **Fixing A Bug:** Reference the issue in your PR description so it closes automatically when merged.
+
 ## Testing
 
 The tests you can create/use at your own leisure can be found in the "UseByTests" folder. We'll be using Swift Testing and the formatting is also available within that file but, we'll leave it here as well for an example. (See section "Test Example")
