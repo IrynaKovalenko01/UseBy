@@ -10,17 +10,51 @@ enum ExpiryEstimation{
         (for entry: FoodKeeperEntry,
         storage: StorageLocation,
         from start: Date = .now) -> Date{
-        var shelfLife = ""
+        var location = ""
         var numDaysLeft: Int = 7
         if (storage == .fridge){
-            if let text = entry.refrigerator {shelfLife = text}
+            location = "Refrigerate"
         } else if (storage == .freezer){
-            if let text = entry.freezer {shelfLife = text}
+            location = "Freeze"
         } else if (storage == .pantry){
-            if let text = entry.pantry {shelfLife = text}
+            location = "Pantry"
         }
 
-        // TODO: turn shelfLife into numDaysLeft
+        var minShelfLife = ""
+        var timeFrame = ""
+
+        // certain fields have default shelf life while others run off the date of purpchase so
+        // we'll check and parse like this
+
+        // here's the check when we have the minimum time frame on hand
+        if let text = entry.rawFields[location + "_Min"]{
+            minShelfLife = text
+            if let time = entry.rawFields[location + "_Metric"]{
+                timeFrame = time
+            }
+        // here's when we only have the DOP availible
+        } else if let text = entry.rawFields["DOP_" + location + "_Min"]{
+            minShelfLife = text
+            if let time = entry.rawFields["DOP_" + location + "_Metric"]{
+                timeFrame = time
+            }
+        }
+
+        // turn the number + time into days, weeks, months or years
+        if let amount = Int(minShelfLife) {
+            if amount > 0 {
+                if  timeFrame == "Days" || timeFrame == "Day" {
+                    numDaysLeft = amount
+                } else if timeFrame == "Weeks" || timeFrame == "Week" {
+                    numDaysLeft = amount * 7
+                } else if timeFrame == "Months" || timeFrame == "Month" {
+                    numDaysLeft = amount * 30
+                } else if timeFrame == "Years" || timeFrame == "Year" {
+                    numDaysLeft = amount * 365
+                }
+                // anything else is default
+            }
+        }
 
         // add the days to the start date
         var expiry = start
