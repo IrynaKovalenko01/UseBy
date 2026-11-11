@@ -125,7 +125,7 @@ enum ExpiryEstimation {
            let rule = matchingRule(for: productName) {
             let guidance = entry.map { selectedGuidance(in: $0, storage: storage) } ?? nil
             if guidance?.localizedCaseInsensitiveContains("until ripe") == true {
-                return "FoodKeeper says to store this item until ripe but gives no number of days. UseBy uses an approximate average of \(days) days based on published produce-storage guidance."
+                return "FoodKeeper says to store this item until ripe but gives no number of days. UseBy uses an approximate \(days)-day average based on published produce-storage guidance."
             }
             return "A numeric FoodKeeper duration was unavailable for this storage method. UseBy uses an approximate \(days)-day estimate based on \(rule.explanation.lowercased())."
         }
