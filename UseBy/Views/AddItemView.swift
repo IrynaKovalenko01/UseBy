@@ -19,6 +19,7 @@ struct AddItemView: View {
     @State private var storage: StorageLocation = .fridge
     @State private var quantity = 1
     @State private var expiryDate = Calendar.current.date(byAdding: .day, value: 7, to: .now) ?? .now
+    @State private var canSaveExpiry = true
 
     private let categories = ["Produce", "Dairy", "Meat", "Bakery", "Frozen", "Grains", "Other"]
 
@@ -95,10 +96,19 @@ struct AddItemView: View {
                     }
                 }
 
-                // Quantity and expiry date.
+                // Quantity.
                 CozySection(title: "Details") {
                     Stepper("Quantity: \(quantity)", value: $quantity, in: 1...99)
-                    DatePicker("Use by", selection: $expiryDate, displayedComponents: .date)
+                }
+
+                // Users can either enter a date or request a FoodKeeper estimate.
+                CozySection(title: "Use By") {
+                    UseByDateSection(
+                        expiryDate: $expiryDate,
+                        canSave: $canSaveExpiry,
+                        itemName: name,
+                        storage: storage
+                    )
                 }
             }
             .padding(20)
@@ -122,7 +132,7 @@ struct AddItemView: View {
                         in: RoundedRectangle(cornerRadius: 18)
                     )
             }
-            .disabled(trimmedName.isEmpty)
+            .disabled(trimmedName.isEmpty || !canSaveExpiry)
             .padding(.horizontal, 20)
             .padding(.vertical, 8)
             .background(Color.cozyCream)

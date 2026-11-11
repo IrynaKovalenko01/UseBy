@@ -25,6 +25,8 @@ struct FoodKeeperEntry: Identifiable {
 /// the Xcode app target if you want lookups to work offline and avoid a network
 /// request on first use.
 actor USDAFoodKeeperAPI {
+    static let shared = USDAFoodKeeperAPI()
+
     static let officialDatasetURL = URL(string: "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json")!
     
     private let datasetURL: URL

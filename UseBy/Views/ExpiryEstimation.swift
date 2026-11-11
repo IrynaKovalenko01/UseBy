@@ -2,7 +2,32 @@ import Foundation
 
 // Tyler Todd
 
-enum ExpiryEstimation{
+enum ExpiryEstimation {
+    /// Whether FoodKeeper provides a positive numeric shelf-life value for the
+    /// selected storage location. If not, estimate() uses its 7-day fallback.
+    static func hasUsableShelfLife(for entry: FoodKeeperEntry, storage: StorageLocation) -> Bool {
+        let location: String
+        switch storage {
+        case .fridge: location = "Refrigerate"
+        case .freezer: location = "Freeze"
+        case .pantry: location = "Pantry"
+        }
+
+        let prefixes = [location, "DOP_" + location]
+        for prefix in prefixes {
+            guard let amountText = entry.rawFields[prefix + "_Min"],
+                  let amount = Int(amountText),
+                  amount > 0,
+                  let metric = entry.rawFields[prefix + "_Metric"]?.lowercased()
+            else { continue }
+
+            if ["day", "days", "week", "weeks", "month", "months", "year", "years"].contains(metric) {
+                return true
+            }
+        }
+        return false
+    }
+
     // Estimates an expiration date or leaves it 
     // default if FoodKeeper can't access/doesn't have it
     static func estimate

@@ -62,4 +62,10 @@ struct ExpiryEstimationTests {
         let expiry = ExpiryEstimation.estimate(for: milk, storage: .pantry, from: start)
         #expect(daysAfterStart(expiry) == 7)
     }
+
+    @Test func detectsUsableShelfLife() {
+        let milk = makeFood(["Refrigerate_Min": "1", "Refrigerate_Metric": "Weeks"])
+        #expect(ExpiryEstimation.hasUsableShelfLife(for: milk, storage: .fridge))
+        #expect(!ExpiryEstimation.hasUsableShelfLife(for: milk, storage: .pantry))
+    }
 }
