@@ -50,7 +50,7 @@ struct AddItemView: View {
 
                 // Large title that matches the My Kitchen header.
                 Text("Add to My Kitchen")
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .font(.system(.largeTitle, design: .default, weight: .bold))
                     .foregroundStyle(Color.cozyBrown)
 
                 // Item name, plus the barcode when the item was scanned.
