@@ -49,23 +49,112 @@ struct ExpiryEstimationTests {
         #expect(daysAfterStart(expiry) == 7)
     }
 
-    // Milk in the fridge with no number, just "package use-by date", should go to default number for 7 days
+    // Milk in the fridge with no number, just "package use-by date", uses the 6-day average fallback
     @Test func milkPackageDate(){
         let milk = makeFood(["Refrigerate_Metric": "Package use-by date"])
         let expiry = ExpiryEstimation.estimate(for: milk, storage: .fridge, from: start)
-        #expect(daysAfterStart(expiry) == 7)
+        #expect(daysAfterStart(expiry) == 6)
     }
 
-    // Milk in the pantry, FoodKeeper has nothing, should go to default
+    // Milk in the pantry, FoodKeeper has nothing, uses the conservative generic fallback
     @Test func milkPantry(){
         let milk = makeFood([:])
         let expiry = ExpiryEstimation.estimate(for: milk, storage: .pantry, from: start)
-        #expect(daysAfterStart(expiry) == 7)
+        #expect(daysAfterStart(expiry) == 3)
     }
 
     @Test func detectsUsableShelfLife() {
         let milk = makeFood(["Refrigerate_Min": "1", "Refrigerate_Metric": "Weeks"])
         #expect(ExpiryEstimation.hasUsableShelfLife(for: milk, storage: .fridge))
         #expect(!ExpiryEstimation.hasUsableShelfLife(for: milk, storage: .pantry))
+    }
+
+    @Test func avocadoPantryUntilRipeUsesAverageThreeDayRipeningEstimate() {
+        let avocado = FoodKeeperEntry(
+            id: "avocado",
+            name: "Avocados",
+            category: "Fruit",
+            pantry: "Until ripe",
+            refrigerator: nil,
+            freezer: nil,
+            afterOpening: nil,
+            tips: nil,
+            rawFields: ["Pantry": "Until ripe"]
+        )
+        let expiry = ExpiryEstimation.estimate(for: avocado, storage: .pantry, from: start)
+        #expect(daysAfterStart(expiry) == 3)
+        #expect(!ExpiryEstimation.hasUsableShelfLife(for: avocado, storage: .pantry))
+        #expect(ExpiryEstimation.fallbackMessage(for: avocado, storage: .pantry).contains("3-day"))
+    }
+
+    @Test func avocadoEstimateExplainsItIsAnApproximation() {
+        let avocado = FoodKeeperEntry(
+            id: "avocado",
+            name: "Avocado",
+            category: "Fruit",
+            pantry: "Until ripe",
+            refrigerator: nil,
+            freezer: nil,
+            afterOpening: nil,
+            tips: nil,
+            rawFields: ["Pantry": "Until ripe"]
+        )
+        #expect(ExpiryEstimation.fallbackMessage(for: avocado, storage: .pantry).contains("approximate"))
+    }
+}
+
+// Fallback coverage for common products whose FoodKeeper values are qualitative
+// (for example, "until ripe" or "package use-by date") or unavailable.
+extension ExpiryEstimationTests {
+    @Test func appleFridgeUsesConservativeAverageStorageEstimate() {
+        #expect(ExpiryEstimation.fallbackDays(for: "Apples", storage: .fridge) == 17)
+        let expiry = ExpiryEstimation.estimate(for: "Apple", storage: .fridge, from: start)
+        #expect(daysAfterStart(expiry) == 17)
+    }
+
+    @Test func avocadoPantryAndFridgeHaveConservativePublishedEstimates() {
+        #expect(ExpiryEstimation.fallbackDays(for: "Avocado", storage: .pantry) == 3)
+        #expect(ExpiryEstimation.fallbackDays(for: "Avocado", storage: .fridge) == 3)
+    }
+
+    @Test func milkPackageDateGetsClearlyLabelledFallback() {
+        let milk = makeFood(["Refrigerate": "Package use-by date"])
+        let expiry = ExpiryEstimation.estimate(for: milk, storage: .fridge, from: start)
+        #expect(daysAfterStart(expiry) == 6)
+        #expect(ExpiryEstimation.fallbackMessage(for: milk, storage: .fridge).contains("6-day"))
+    }
+
+    @Test func commonUntilRipeFruitHasProductSpecificFallback() {
+        #expect(ExpiryEstimation.fallbackDays(for: "Bananas", storage: .pantry) == 4)
+        #expect(ExpiryEstimation.fallbackDays(for: "Peaches", storage: .pantry) == 4)
+        #expect(ExpiryEstimation.fallbackDays(for: "Pears", storage: .pantry) == 7)
+        #expect(ExpiryEstimation.fallbackDays(for: "Mango", storage: .pantry) == 7)
+    }
+
+    @Test func numericTextualRangeUsesAverageAndRoundsDown() {
+        let apple = FoodKeeperEntry(
+            id: "range",
+            name: "Apples",
+            category: "Fruit",
+            pantry: nil,
+            refrigerator: "1-2 weeks",
+            freezer: nil,
+            afterOpening: nil,
+            tips: nil,
+            rawFields: ["Refrigerate": "1-2 weeks"]
+        )
+        let expiry = ExpiryEstimation.estimate(for: apple, storage: .fridge, from: start)
+        #expect(daysAfterStart(expiry) == 10)
+        #expect(ExpiryEstimation.hasUsableShelfLife(for: apple, storage: .fridge))
+    }
+
+    @Test func unknownProductStillGetsExplicitGenericEstimate() {
+        let expiry = ExpiryEstimation.estimate(for: "Mystery ingredient", storage: .fridge, from: start)
+        #expect(daysAfterStart(expiry) == 3)
+        #expect(ExpiryEstimation.fallbackMessage(for: "Mystery ingredient", storage: .fridge).contains("generic 3-day"))
+    }
+
+    @Test func applesauceDoesNotAccidentallyMatchFreshAppleRule() {
+        #expect(ExpiryEstimation.fallbackDays(for: "Applesauce", storage: .fridge) == nil)
     }
 }

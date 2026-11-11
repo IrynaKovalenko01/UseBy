@@ -88,10 +88,13 @@ struct UseByDateSection: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Based on USDA FoodKeeper storage guidance. Actual shelf life may vary.")
+                Text("Based on USDA FoodKeeper storage guidance.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Text("This is an estimate, not a guarantee of when the ingredient will expire. Check the food's condition before consuming.")
+                .font(.caption)
+                .foregroundStyle(.orange)
         } else if let statusMessage {
             Text(statusMessage)
                 .font(.caption)
@@ -119,29 +122,34 @@ struct UseByDateSection: View {
         defer { isLoading = false }
 
         do {
-            guard let entry = try await USDAFoodKeeperAPI.shared.bestMatch(for: query) else {
+            if let entry = try await USDAFoodKeeperAPI.shared.bestMatch(for: query) {
+                let hasShelfLife = ExpiryEstimation.hasUsableShelfLife(for: entry, storage: storage)
+                let result = ExpiryEstimation.estimate(for: entry, storage: storage)
                 guard !Task.isCancelled else { return }
-                estimatedDate = nil
-                canSave = false
-                statusMessage = "No matching FoodKeeper item was found. Choose manual entry instead."
-                return
+
+                estimatedDate = result
+                expiryDate = result
+                canSave = true
+                statusMessage = hasShelfLife ? nil : ExpiryEstimation.fallbackMessage(for: entry, storage: storage)
+            } else {
+                // A local product fallback keeps estimation usable when USDA
+                // has no exact item match. The UI clearly labels the estimate.
+                let result = ExpiryEstimation.estimate(for: query, storage: storage)
+                guard !Task.isCancelled else { return }
+                estimatedDate = result
+                expiryDate = result
+                canSave = true
+                statusMessage = ExpiryEstimation.fallbackMessage(for: query, storage: storage)
             }
-
-            let hasShelfLife = ExpiryEstimation.hasUsableShelfLife(for: entry, storage: storage)
-            let result = ExpiryEstimation.estimate(for: entry, storage: storage)
+        } catch {
+            // Network or decoding failures should not prevent a local estimate.
+            // The fallback message makes clear that this is not USDA data.
             guard !Task.isCancelled else { return }
-
+            let result = ExpiryEstimation.estimate(for: query, storage: storage)
             estimatedDate = result
             expiryDate = result
             canSave = true
-            if !hasShelfLife {
-                statusMessage = "No shelf-life value was available for this storage method, so a 7-day fallback is being used."
-            }
-        } catch {
-            guard !Task.isCancelled else { return }
-            estimatedDate = nil
-            canSave = false
-            statusMessage = "Could not load an estimate: \(error.localizedDescription). You can switch to manual entry."
+            statusMessage = "FoodKeeper could not be reached. " + ExpiryEstimation.fallbackMessage(for: query, storage: storage)
         }
     }
 }
