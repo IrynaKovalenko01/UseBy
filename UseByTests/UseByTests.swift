@@ -80,8 +80,6 @@ struct PantryItemStorageTests {
         #expect(item.storage == .freezer)
     }
 }
-
-
 // Alex Kuznetsov
 @Suite("Expiration date workflows")
 struct ExpirationDateWorkflowTests {
@@ -258,5 +256,74 @@ struct ExpirationDateWorkflowTests {
         #expect(savedItems[0].expiryDate == freezerEstimate)
         #expect(daysBetween(referenceDate, and: savedItems[0].expiryDate) == 90)
         #expect(savedItems[0].expiryDate != fridgeEstimate)
+    }
+}
+
+
+// Vaibhav - Shopping List tests
+// Shopping list coverage with in-memory SwiftData context
+@Suite("Shopping list fulfillment")
+struct ShoppingListTests {
+
+    /// Holds the container so it stays alive for the whole test.
+    private struct Store {
+        let container: ModelContainer
+        let context: ModelContext
+    }
+
+    private func makeStore() throws -> Store {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(
+            for: PantryItem.self, ShoppingItem.self,
+            configurations: config
+        )
+        return Store(container: container, context: ModelContext(container))
+    }
+
+    private func makePantryItem(name: String, quantity: Int = 1) -> PantryItem {
+        PantryItem(
+            name: name,
+            category: "Dairy",
+            storage: .fridge,
+            quantity: quantity,
+            expiryDate: Calendar.current.date(byAdding: .day, value: 7, to: .now)!
+        )
+    }
+
+    private func shoppingItems(in context: ModelContext) throws -> [ShoppingItem] {
+        try context.save()
+        return try context.fetch(FetchDescriptor<ShoppingItem>())
+    }
+
+    @Test func buyingFullQuantityRemovesShoppingItem() throws {
+        let store = try makeStore()
+        store.context.insert(ShoppingItem(name: "Milk", quantity: 2))
+
+        store.context.addToPantry(makePantryItem(name: "Milk", quantity: 2))
+
+        #expect(try shoppingItems(in: store.context).isEmpty)
+    }
+
+    @Test func buyingPartialQuantityLeavesRemainderOnList() throws {
+        let store = try makeStore()
+        store.context.insert(ShoppingItem(name: "Milk", quantity: 3))
+
+        store.context.addToPantry(makePantryItem(name: "Milk", quantity: 1))
+
+        let items = try shoppingItems(in: store.context)
+        #expect(items.count == 1)
+        #expect(items.first?.quantity == 2)
+    }
+
+    @Test func itemNotOnShoppingListStillAddsToPantry() throws {
+        let store = try makeStore()
+        store.context.insert(ShoppingItem(name: "Bread", quantity: 1))
+
+        store.context.addToPantry(makePantryItem(name: "Cheese"))
+        try store.context.save()
+
+        let pantry = try store.context.fetch(FetchDescriptor<PantryItem>())
+        #expect(pantry.count == 1)
+        #expect(try shoppingItems(in: store.context).first?.name == "Bread")
     }
 }

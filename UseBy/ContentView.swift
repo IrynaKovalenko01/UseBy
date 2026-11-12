@@ -17,6 +17,11 @@ struct ContentView: View {
                 Label("Scan", systemImage: "barcode.viewfinder")
             }
 
+            ShoppingListView()
+            .tabItem {
+                Label("Shopping", systemImage: "cart")
+            }
+
             ComingSoonView(
                 title: "Cookbook",
                 heading: "Recipes are coming soon",
@@ -83,5 +88,5 @@ struct ComingSoonView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: PantryItem.self, inMemory: true)
+        .modelContainer(for: [PantryItem.self, ShoppingItem.self], inMemory: true)
 }

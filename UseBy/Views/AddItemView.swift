@@ -14,6 +14,9 @@ struct AddItemView: View {
     /// A scanner-supplied code. It is nil for Pantry's normal "+" flow.
     let scannedBarcode: String?
 
+    /// Set when the form is opened from the shopping list.
+    let shoppingItem: ShoppingItem?
+
     @State private var name = ""
     @State private var category = "Produce"
     @State private var storage: StorageLocation = .fridge
@@ -30,8 +33,16 @@ struct AddItemView: View {
 
     /// The default initializer supports manual entry; passing a code activates
     /// the scanner continuation variant without duplicating the form.
-    init(scannedBarcode: String? = nil) {
+    init(scannedBarcode: String? = nil, shoppingItem: ShoppingItem? = nil) {
         self.scannedBarcode = scannedBarcode
+        self.shoppingItem = shoppingItem
+        // Prefill from the shopping list entry when there is one.
+        if let shoppingItem {
+            _name = State(initialValue: shoppingItem.name)
+            _category = State(initialValue: shoppingItem.category)
+            _storage = State(initialValue: shoppingItem.storage)
+            _quantity = State(initialValue: min(max(shoppingItem.quantity, 1), 99))
+        }
     }
 
     /// Trim before validation and persistence so whitespace-only names cannot
@@ -99,17 +110,23 @@ struct AddItemView: View {
                 // Quantity.
                 CozySection(title: "Details") {
                     Stepper("Quantity: \(quantity)", value: $quantity, in: 1...99)
-                }
 
-                // Users can either enter a date or request a FoodKeeper estimate.
-                CozySection(title: "Use By") {
-                    UseByDateSection(
-                        expiryDate: $expiryDate,
-                        canSave: $canSaveExpiry,
-                        itemName: name,
-                        storage: storage
-                    )
-                }
+                    // Explains partial purchases when coming from the shopping list.
+                    if let shoppingItem {
+                        Text(partialPurchaseHint(for: shoppingItem))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    // Users can either enter a date or request a FoodKeeper estimate.
+                    CozySection(title: "Use By") {
+                        UseByDateSection(
+                            expiryDate: $expiryDate,
+                            canSave: $canSaveExpiry,
+                            itemName: name,
+                            storage: storage
+                        )
+                    }
             }
             .padding(20)
         }
@@ -141,6 +158,14 @@ struct AddItemView: View {
         .tint(.cozyBrown)
         // Keeps light mode on so the text stays readable on cream.
         .preferredColorScheme(.light)
+    }
+
+    /// Deals with the situation when you buy fewer than the shopping list entry's quantity.
+    private func partialPurchaseHint(for item: ShoppingItem) -> String {
+        if quantity < item.quantity {
+            return "You need \(item.quantity). \(item.quantity - quantity) will stay on your shopping list."
+        }
+        return "You need \(item.quantity). Buying fewer leaves the rest on your shopping list."
     }
 
     // Chooses the icon shown on each category button.
@@ -177,7 +202,7 @@ struct AddItemView: View {
             barcode: scannedBarcode,
             expiryDate: expiryDate
         )
-        modelContext.insert(newItem)
+        modelContext.addToPantry(newItem, from: shoppingItem)
         dismiss()
     }
 }

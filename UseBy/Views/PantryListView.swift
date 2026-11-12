@@ -170,5 +170,5 @@ struct PantryRow: View {
 
 #Preview {
     PantryListView()
-        .modelContainer(for: PantryItem.self, inMemory: true)
+        .modelContainer(for: [PantryItem.self, ShoppingItem.self], inMemory: true)
 }
