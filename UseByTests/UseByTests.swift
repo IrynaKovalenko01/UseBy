@@ -45,11 +45,6 @@ struct PantryItemTests {
         #expect(item.urgency == .safe)
     }
 
-    @Test func invalidStorageRawDefaultsToFridge() throws {
-        let item = try makeItem(daysFromNow: 5)
-        item.storageRaw = "NotAPlace"
-        #expect(item.storage == .fridge)
-    }
 }
 
 

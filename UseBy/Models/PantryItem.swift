@@ -21,9 +21,7 @@ enum Urgency : Equatable {
 /// A recreated app needs a single persistent model that holds the manual form's
 /// name, category, storage, quantity, and expiry date. barcode is optional:
 /// manually created items have no code, while scanner-created items keep the
-/// exact payload returned by VisionKit. Optional weightGrams preserves the
-/// edit screen's alternative weight-based amount without changing the existing
-/// quantity-based add flow.
+/// exact payload returned by VisionKit.
 @Model
 final class PantryItem {
     var name: String
