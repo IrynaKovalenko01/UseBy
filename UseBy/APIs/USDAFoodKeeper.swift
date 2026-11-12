@@ -25,6 +25,8 @@ struct FoodKeeperEntry: Identifiable {
 /// the Xcode app target if you want lookups to work offline and avoid a network
 /// request on first use.
 actor USDAFoodKeeperAPI {
+    static let shared = USDAFoodKeeperAPI()
+
     static let officialDatasetURL = URL(string: "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json")!
     
     private let datasetURL: URL
@@ -81,13 +83,32 @@ actor USDAFoodKeeperAPI {
         guard !term.isEmpty else { return nil }
         let entries = try await loadEntries()
         let normalizedTerm = Self.normalize(term)
-        
+        let queryTokens = Self.tokens(in: term)
+
+        // Prefer exact product names. The old first-contains match could select
+        // an unrelated entry (for example, "buttermilk" for a query of "milk").
         if let exact = entries.first(where: { Self.normalize($0.name) == normalizedTerm }) {
             return exact
         }
-        return entries.first(where: {
+
+        // Then accept simple singular/plural variations such as Avocado/Avocados.
+        if let pluralMatch = entries.first(where: {
             let name = Self.normalize($0.name)
-            return name.contains(normalizedTerm) || normalizedTerm.contains(name)
+            return name == normalizedTerm + "s" || normalizedTerm == name + "s" ||
+                   name == normalizedTerm + "es" || normalizedTerm == name + "es"
+        }) {
+            return pluralMatch
+        }
+
+        // Finally compare whole words, not arbitrary substrings. This avoids
+        // matching "apple" to "applesauce" or "milk" to "buttermilk".
+        return entries.first(where: { entry in
+            let nameTokens = Self.tokens(in: entry.name)
+            return queryTokens.contains { queryToken in
+                nameTokens.contains { nameToken in
+                    nameToken == queryToken || nameToken == queryToken + "s" || queryToken == nameToken + "s"
+                }
+            }
         })
     }
     
@@ -183,16 +204,20 @@ actor USDAFoodKeeperAPI {
         for candidate in candidates {
             if let value = normalizedFields[candidate], !value.isEmpty { return value }
         }
-        // Fall back to fuzzy key matching for dataset variants.
-        for candidate in candidates {
-            if let match = normalizedFields.first(where: { $0.key.contains(candidate) && !$0.value.isEmpty }) {
-                return match.value
-            }
-        }
+        // Do not use broad substring matching here. A request for the Pantry
+        // guidance field must not accidentally return Pantry_Min or Pantry_Metric;
+        // those numeric fields are handled separately by ExpiryEstimation.
         return nil
     }
     
     private static func normalize(_ string: String) -> String {
         string.lowercased().filter { $0.isLetter || $0.isNumber }
+    }
+
+    private static func tokens(in string: String) -> [String] {
+        string.lowercased()
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map { normalize(String($0)) }
+            .filter { !$0.isEmpty }
     }
 }
