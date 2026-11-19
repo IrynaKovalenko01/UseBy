@@ -9,27 +9,18 @@ struct ContentView: View {
                     Label("Pantry", systemImage: "refrigerator")
                 }
 
-            // ScanProductView owns the camera-to-add-form workflow. Keeping it as
-            // the tab root makes barcode entry available alongside manual Pantry
-            // entry and preserves its scanner session while the tab is selected.
             ScanProductView()
-            .tabItem {
-                Label("Scan", systemImage: "barcode.viewfinder")
-            }
+                .tabItem {
+                    Label("Scan", systemImage: "barcode.viewfinder")
+                }
 
+            RecipeListView()
+                .tabItem {
+                    Label("Cook", systemImage: "fork.knife")
+                }
             ShoppingListView()
             .tabItem {
                 Label("Shopping", systemImage: "cart")
-            }
-
-            ComingSoonView(
-                title: "Cookbook",
-                heading: "Recipes are coming soon",
-                message: "We'll suggest recipes that use your soonest-expiring food first.",
-                icon: "book.closed"
-            )
-            .tabItem {
-                Label("Cookbook", systemImage: "book.closed")
             }
         }
         // Makes the selected tab warm brown instead of blue.
