@@ -16,6 +16,6 @@ jobs:
           xcodebuild test \
             -project UseBy.xcodeproj \
             -scheme UseBy \
-            -destination 'platform=iOS Simulator,id=23C8F95C-765D-46A9-AE82-0BEE2921C8D7' \
+            -destination 'platform=iOS Simulator,id=F5450765-59B9-4D0C-9B64-845B8C9EE51F' \
             -only-testing:UseByTests \
             CODE_SIGNING_ALLOWED=NO
