@@ -19,6 +19,9 @@ struct AddItemView: View {
         value: 7,
         to: .now
     ) ?? .now
+  
+    @State private var isLoadingProduct = false
+    @State private var lookupMessage: String?
     @State private var canSaveExpiry = true
 
     private let categories = [
@@ -71,16 +74,30 @@ struct AddItemView: View {
                     .foregroundStyle(Color.cozyBrown)
 
                 CozySection(title: "What is it?") {
+                  if isLoadingProduct {
+                    HStack {
+                        ProgressView()
+                        Text("Looking up product...")
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
                     TextField("Item name", text: $name)
                         .font(.title3)
-
-                    if let scannedBarcode {
-                        LabeledContent(
-                            "Scanned barcode",
-                            value: scannedBarcode
-                        )
-                    }
                 }
+
+                if let lookupMessage {
+                    Text(lookupMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let scannedBarcode {
+                    LabeledContent(
+                        "Scanned barcode",
+                        value: scannedBarcode
+                    )
+                }
+            }
 
                 CozySection(title: "Category") {
                     LazyVGrid(columns: categoryColumns, spacing: 8) {
@@ -132,12 +149,13 @@ struct AddItemView: View {
                         storage: storage
                     )
                 }
+
             }
             .padding(20)
             .scrollDismissesKeyboard(.interactively)
             .background(Color.cozyCream)
         }
-        .safeAreaInset(edge: .bottom) {
+                .safeAreaInset(edge: .bottom) {
             Button {
                 addItem()
             } label: {
@@ -157,6 +175,36 @@ struct AddItemView: View {
             .padding(.vertical, 8)
             .background(Color.cozyCream)
         }
+
+        .task(id: scannedBarcode) {
+            guard let barcode = scannedBarcode, !barcode.isEmpty else {
+                return
+            }
+
+            isLoadingProduct = true
+            lookupMessage = nil
+
+            do {
+                if let product = try await OpenFoodFactsAPI().product(barcode: barcode) {
+                    if let productName = product.productName,
+                       !productName.isEmpty {
+                        name = productName
+                    }
+
+                    if let tags = product.categoriesTags {
+                        category = mapOFFCategory(tags)
+                    }
+
+                    lookupMessage = "Name filled in from Open Food Facts — edit if needed."
+                } else {
+                    lookupMessage = "Product not found — enter the name manually."
+                }
+            } catch {
+                lookupMessage = "Couldn't look up product — enter the name manually."
+            }
+            isLoadingProduct = false
+        }
+
         .tint(.cozyBrown)
         .preferredColorScheme(.light)
     }
@@ -205,6 +253,24 @@ struct AddItemView: View {
 
         modelContext.addToPantry(newItem, from: shoppingItem)
         dismiss()
+    }
+
+    private func mapOFFCategory(_ tags: [String]) -> String {
+        let rules: [(String, String)] = [
+            ("dairy", "Dairy"), ("milk", "Dairy"), ("cheese", "Dairy"), ("yogurt", "Dairy"),
+            ("meat", "Meat"), ("fish", "Meat"), ("seafood", "Meat"), ("poultry", "Meat"),
+            ("fruit", "Produce"), ("vegetable", "Produce"), ("produce", "Produce"),
+            ("bread", "Bakery"), ("baked", "Bakery"), ("pastry", "Bakery"),
+            ("frozen", "Frozen"),
+            ("cereal", "Grains"), ("pasta", "Grains"), ("rice", "Grains"), ("grain", "Grains"),
+        ]
+        for tag in tags {
+            let lower = tag.lowercased()
+            for (keyword, mapped) in rules {
+                if lower.contains(keyword) { return mapped }
+            }
+        }
+        return "Other"
     }
 }
 
