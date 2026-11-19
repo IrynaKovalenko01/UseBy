@@ -149,7 +149,7 @@ struct AddItemView: View {
                         storage: storage
                     )
                 }
-                isLoadingProduct = false
+
             }
             .padding(20)
             .scrollDismissesKeyboard(.interactively)
