@@ -21,12 +21,14 @@ jobs:
             xcodebuild -downloadPlatform iOS
           fi
 
+      
       - name: Select available iPhone simulator
         id: simulator
         run: |
           DESTINATION=$(python3 - <<'PY'
           import json
           import subprocess
+          import re
 
           data = json.loads(subprocess.check_output([
               "xcrun", "simctl", "list", "devices", "available", "-j"
@@ -35,22 +37,25 @@ jobs:
           devices = []
 
           for runtime, entries in data["devices"].items():
-              if not runtime.startswith("com.apple.CoreSimulator.SimRuntime.iOS-"):
+              match = re.search(r"iOS-(\d+)-(\d+)", runtime)
+
+              if not match:
                   continue
 
-              version = runtime.rsplit(".", 1)[-1].replace("-", ".")
+              version = f"{match.group(1)}.{match.group(2)}"
 
               for device in entries:
                   if device.get("isAvailable") and device["name"].startswith("iPhone"):
-                      devices.append((version, device["name"]))
+                      devices.append((
+                          tuple(map(int, match.groups())),
+                          device["name"],
+                          version
+                      ))
 
           if not devices:
               raise SystemExit("No available iPhone simulators found.")
 
-          version, name = sorted(
-              devices,
-              key=lambda item: tuple(map(int, item[0].split(".")))
-          )[-1]
+          _, name, version = max(devices, key=lambda item: item[0])
 
           print(f"platform=iOS Simulator,name={name},OS={version}")
           PY
