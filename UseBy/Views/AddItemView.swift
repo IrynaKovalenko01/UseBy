@@ -6,7 +6,6 @@ struct AddItemView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    let scannedBarcode: String?
 
     let scannedBarcode: String?
     let shoppingItem: ShoppingItem?
