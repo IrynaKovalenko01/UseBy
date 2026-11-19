@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -9,13 +10,60 @@ on:
 jobs:
   test:
     runs-on: macos-26
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ensure iOS simulator is available
+        run: |
+          if ! xcrun simctl list devices available | grep -q 'iPhone'; then
+            echo "No available iPhone simulators. Installing iOS runtime..."
+            xcodebuild -downloadPlatform iOS
+          fi
+
+      - name: Select available iPhone simulator
+        id: simulator
+        run: |
+          DESTINATION=$(python3 - <<'PY'
+          import json
+          import subprocess
+
+          data = json.loads(subprocess.check_output([
+              "xcrun", "simctl", "list", "devices", "available", "-j"
+          ]))
+
+          devices = []
+
+          for runtime, entries in data["devices"].items():
+              if not runtime.startswith("com.apple.CoreSimulator.SimRuntime.iOS-"):
+                  continue
+
+              version = runtime.rsplit(".", 1)[-1].replace("-", ".")
+
+              for device in entries:
+                  if device.get("isAvailable") and device["name"].startswith("iPhone"):
+                      devices.append((version, device["name"]))
+
+          if not devices:
+              raise SystemExit("No available iPhone simulators found.")
+
+          version, name = sorted(
+              devices,
+              key=lambda item: tuple(map(int, item[0].split(".")))
+          )[-1]
+
+          print(f"platform=iOS Simulator,name={name},OS={version}")
+          PY
+          )
+
+          echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
+          echo "Using simulator: $DESTINATION"
+
       - name: Run tests
         run: |
           xcodebuild test \
             -project UseBy.xcodeproj \
             -scheme UseBy \
-            -destination 'platform=iOS Simulator,id=F5450765-59B9-4D0C-9B64-845B8C9EE51F' \
+            -destination '${{ steps.simulator.outputs.destination }}' \
             -only-testing:UseByTests \
             CODE_SIGNING_ALLOWED=NO
