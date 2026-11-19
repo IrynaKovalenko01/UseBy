@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          xcodebuild test \
+            -project UseBy.xcodeproj \
+            -scheme UseBy \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' \
+            -only-testing:UseByTests \
+            CODE_SIGNING_ALLOWED=NO

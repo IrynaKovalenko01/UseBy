@@ -6,6 +6,7 @@ struct ItemDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let item: PantryItem
     @State private var showingEdit = false
+    @State private var addedToList = false
     
     var body: some View {
         Form {
@@ -31,6 +32,23 @@ struct ItemDetailView: View {
                 Button("Edit") {
                     showingEdit = true
                 }
+
+                Button(addedToList ? "Added to Shopping List" : "Add to Shopping List") {
+                    // Copies the pantry item's details into a shopping entry.
+                    ShoppingItem.add(
+                        ShoppingItem(
+                            name: item.name,
+                            category: item.category,
+                            storage: item.storage,
+                            quantity: 1,
+                            barcode: item.barcode
+                        ),
+                        in: modelContext
+                    )
+                    addedToList = true
+                }
+                .disabled(addedToList)
+
                 Button("Discard", role: .destructive) {
                     modelContext.delete(item)
                     dismiss()

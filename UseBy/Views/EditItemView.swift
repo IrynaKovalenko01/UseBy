@@ -14,6 +14,7 @@ struct EditItemView: View {
     @State private var storage: StorageLocation
     @State private var quantity: Int
     @State private var expiryDate: Date
+    @State private var canSaveExpiry = true
 
     private let categories = ["Produce", "Dairy", "Meat", "Bakery", "Frozen", "Grains", "Other"]
 
@@ -48,8 +49,13 @@ struct EditItemView: View {
                     }
                 }
 
-                Section("Expiration") {
-                    DatePicker("Use by", selection: $expiryDate, displayedComponents: .date)
+                Section("Use By") {
+                    UseByDateSection(
+                        expiryDate: $expiryDate,
+                        canSave: $canSaveExpiry,
+                        itemName: name,
+                        storage: storage
+                    )
                 }
 
                 if let barcode = item.barcode {
@@ -65,7 +71,7 @@ struct EditItemView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
-                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !canSaveExpiry)
                 }
             }
         }

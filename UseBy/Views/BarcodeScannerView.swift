@@ -25,11 +25,21 @@ struct ScanProductView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            VStack(alignment: .leading, spacing: 12) {
+                // Large title that matches the My Kitchen header.
+                Text("Scan Barcode")
+                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .foregroundStyle(Color.cozyBrown)
+
                 // VisionKit data scanning requires supported hardware. A physical
                 // device with Live Text support is needed; unsupported devices
                 // receive an explanation instead of a nonfunctional camera view.
                 if DataScannerViewController.isSupported {
+                    // Explains the tap, since scanning alone doesn't add an item.
+                    Text("Point your camera at a barcode, then tap its highlight.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
                     BarcodeScannerView(
                         onBarcode: { barcode in
                             // Accept a code only after the user taps its camera
@@ -40,16 +50,40 @@ struct ScanProductView: View {
                         onError: { scannerError = $0 }
                     )
                     .id(scannerSessionID)
-                    .ignoresSafeArea()
+                    // Shows the camera as a rounded card.
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .padding(.bottom, 8)
                 } else {
-                    ContentUnavailableView(
-                        "Barcode scanning isn't supported",
-                        systemImage: "barcode.viewfinder",
-                        description: Text("Use a device that supports Live Text scanning to scan a product barcode.")
-                    )
+                    // Pushes the card toward the middle of the screen.
+                    Spacer()
+
+                    // Card explaining why the camera isn't available.
+                    VStack(spacing: 12) {
+                        Image(systemName: "barcode.viewfinder")
+                            .font(.system(size: 56))
+                            .foregroundStyle(Color.cozyBrown)
+                        Text("Barcode scanning isn't supported")
+                            .font(.system(.title2, design: .rounded, weight: .bold))
+                        Text("Use a device that supports Live Text scanning to scan a product barcode.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(28)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.cozyCard, in: RoundedRectangle(cornerRadius: 20))
+
+                    // Keeps the card centered by balancing the space above it.
+                    Spacer()
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            // Puts the warm cream color behind the whole screen.
+            .background(Color.cozyCream)
             .navigationTitle("Scan Barcode")
+            // Hides the default top bar because this screen has its own title.
+            .toolbar(.hidden, for: .navigationBar)
             // Present the same form as manual entry, but attach the recognized
             // payload so AddItemView writes it to PantryItem.barcode.
             .sheet(isPresented: $isPresentingAddItem, onDismiss: resetScanner) {
@@ -116,14 +150,21 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         )
         scanner.delegate = context.coordinator
 
-        do {
-            try scanner.startScanning()
-        } catch {
-            // This normally covers denied camera permission or a camera that
-            // becomes unavailable; the parent turns it into a user-facing alert.
-            context.coordinator.onError("Camera access is required to scan a barcode.")
-        }
+        // Keeps a reference to the coordinator for use inside the delayed task.
+                let coordinator = context.coordinator
 
+                // Waits briefly so the camera view is on screen before scanning starts.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(500))
+
+                    do {
+                        try scanner.startScanning()
+                    } catch {
+                        // This normally covers denied camera permission or a camera that
+                        // becomes unavailable; the parent turns it into a user-facing alert.
+                        coordinator.onError("Camera access is required to scan a barcode.")
+                    }
+                }
         return scanner
     }
 
