@@ -13,6 +13,7 @@ struct UseByApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             PantryItem.self,
+            ShoppingItem.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

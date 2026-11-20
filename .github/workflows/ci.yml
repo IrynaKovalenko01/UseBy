@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -9,13 +10,65 @@ on:
 jobs:
   test:
     runs-on: macos-26
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ensure iOS simulator is available
+        run: |
+          if ! xcrun simctl list devices available | grep -q 'iPhone'; then
+            echo "No available iPhone simulators. Installing iOS runtime..."
+            xcodebuild -downloadPlatform iOS
+          fi
+
+      
+      - name: Select available iPhone simulator
+        id: simulator
+        run: |
+          DESTINATION=$(python3 - <<'PY'
+          import json
+          import subprocess
+          import re
+
+          data = json.loads(subprocess.check_output([
+              "xcrun", "simctl", "list", "devices", "available", "-j"
+          ]))
+
+          devices = []
+
+          for runtime, entries in data["devices"].items():
+              match = re.search(r"iOS-(\d+)-(\d+)", runtime)
+
+              if not match:
+                  continue
+
+              version = f"{match.group(1)}.{match.group(2)}"
+
+              for device in entries:
+                  if device.get("isAvailable") and device["name"].startswith("iPhone"):
+                      devices.append((
+                          tuple(map(int, match.groups())),
+                          device["name"],
+                          version
+                      ))
+
+          if not devices:
+              raise SystemExit("No available iPhone simulators found.")
+
+          _, name, version = max(devices, key=lambda item: item[0])
+
+          print(f"platform=iOS Simulator,name={name},OS={version}")
+          PY
+          )
+
+          echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
+          echo "Using simulator: $DESTINATION"
+
       - name: Run tests
         run: |
           xcodebuild test \
             -project UseBy.xcodeproj \
             -scheme UseBy \
-            -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' \
+            -destination '${{ steps.simulator.outputs.destination }}' \
             -only-testing:UseByTests \
             CODE_SIGNING_ALLOWED=NO

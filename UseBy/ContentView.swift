@@ -1,11 +1,12 @@
 import SwiftUI
 import SwiftData
 
-// The three screens the bottom bar switches between.
+// The four screens the bottom bar switches between.
 enum AppTab {
     case pantry
     case scan
     case cookbook
+    case shopping
 }
 
 struct ContentView: View {
@@ -26,12 +27,10 @@ struct ContentView: View {
                 ScanProductView()
 
             case .cookbook:
-                ComingSoonView(
-                    title: "Cookbook",
-                    heading: "Recipes are coming soon",
-                    message: "We'll suggest recipes that use your soonest-expiring food first.",
-                    icon: "book.closed"
-                )
+                RecipeListView()
+
+            case .shopping:
+                ShoppingListView()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -46,8 +45,8 @@ struct ContentView: View {
     }
 }
 
-// The bottom bar: Pantry on the left, a raised Scan button in the middle,
-// and Cookbook on the right.
+// The bottom bar: Pantry on the left, a raised Scan button,
+// then Cookbook and Shopping on the right.
 private struct CustomTabBar: View {
     @Binding var selectedTab: AppTab
 
@@ -61,7 +60,7 @@ private struct CustomTabBar: View {
                 selectedTab = .pantry
             }
 
-            // Raised center button for scanning.
+            // Raised button for scanning.
             Button {
                 selectedTab = .scan
             } label: {
@@ -97,17 +96,25 @@ private struct CustomTabBar: View {
             ) {
                 selectedTab = .cookbook
             }
+
+            TabBarItem(
+                title: "Shopping",
+                icon: "cart",
+                isSelected: selectedTab == .shopping
+            ) {
+                selectedTab = .shopping
+            }
         }
         .padding(.horizontal, 24)
         .padding(.bottom, -18)
         // White bar with rounded top corners and a soft shadow.
-                .background(
-                    UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28)
-                        .fill(Color.cozyCard)
-                        .shadow(color: .black.opacity(0.08), radius: 12, y: -2)
-                        // Extends the white down to the bottom edge of the screen.
-                        .ignoresSafeArea(edges: .bottom)
-                )
+        .background(
+            UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28)
+                .fill(Color.cozyCard)
+                .shadow(color: .black.opacity(0.08), radius: 12, y: -2)
+                // Extends the white down to the bottom edge of the screen.
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 }
 
@@ -186,5 +193,5 @@ struct ComingSoonView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: PantryItem.self, inMemory: true)
+        .modelContainer(for: [PantryItem.self, ShoppingItem.self], inMemory: true)
 }

@@ -69,6 +69,25 @@ With an iPhone simulator selected, press play or run it with (Command + R). The 
 
 - **Cook Tab:** Reccipes on the website come from the Spoonacular API, which requires a API key (it's free). Get one paste it into the 'apiKey' in 'UseBy/APIs/Spoonacular.swift.' Without a key the cook tab will just show an error.
 
+### How expiration estimates work
+
+When adding or editing a food item, go to the
+"Pantry" Section.
+
+- Enter manually: Choose your own expiration date.
+- Estimate from FoodKeeper: Automatically estimate
+  a date based on the food name and storage location.
+
+Changing the storage location (Fridge, Freezer, or
+Pantry) automatically recalculates the estimate.
+
+If FoodKeeper cannot find a matching food item or
+cannot be reached, UseBy provides a local
+estimate instead.
+
+Estimated dates are approximate. Always check the
+food packaging date and follow food safety guidance.
+
 ## How to Test (command line)
 
 The same command CI runs:
