@@ -127,19 +127,33 @@ struct PantryListView: View {
                             .font(.system(size: 40, weight: .semibold, design: .default))
                             .foregroundStyle(Color.cozyBrown)
 
-                        // Pushes the + button to the right.
+                        // Pushes the cart and + buttons to the right.
                         Spacer()
+
+                        // Cart button that opens the shopping list.
+                        NavigationLink {
+                            ShoppingListView()
+                        } label: {
+                            Image(systemName: "cart")
+                                // A bit smaller than the plus, so Add Item stays the main button.
+                                .font(.title2.weight(.semibold))
+                                .foregroundStyle(Color.cozyBrown)
+                                // Keeps the tap area large, like the plus button.
+                                .frame(width: 48, height: 48)
+                        }
+                        // Gives VoiceOver a clear name for the icon-only button.
+                        .accessibilityLabel("Shopping List")
 
                         // Rounded button that opens the Add Item screen.
                         Button {
                             showingAdd = true
                         } label: {
                             Image(systemName: "plus")
-                            .font(.title.weight(.semibold))
-                            // Dark plum plus with no box behind it.
-                            .foregroundStyle(Color.cozyBrown)
-                            // Keeps the tap area large, even though only the plus shows.
-                            .frame(width: 48, height: 48)
+                                .font(.title.weight(.semibold))
+                                // Dark plum plus with no box behind it.
+                                .foregroundStyle(Color.cozyBrown)
+                                // Keeps the tap area large, even though only the plus shows.
+                                .frame(width: 48, height: 48)
                         }
                         // Gives VoiceOver a clear name for the icon-only button.
                         .accessibilityLabel("Add Item")

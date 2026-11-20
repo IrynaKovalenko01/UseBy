@@ -1,12 +1,11 @@
 import SwiftUI
 import SwiftData
 
-// The four screens the bottom bar switches between.
+// The three screens the bottom bar switches between.
 enum AppTab {
     case pantry
     case scan
     case cookbook
-    case shopping
 }
 
 struct ContentView: View {
@@ -28,9 +27,6 @@ struct ContentView: View {
 
             case .cookbook:
                 RecipeListView()
-
-            case .shopping:
-                ShoppingListView()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -45,8 +41,8 @@ struct ContentView: View {
     }
 }
 
-// The bottom bar: Pantry on the left, a raised Scan button,
-// then Cookbook and Shopping on the right.
+// The bottom bar: Pantry on the left, a raised Scan button in the middle,
+// and Cookbook on the right.
 private struct CustomTabBar: View {
     @Binding var selectedTab: AppTab
 
@@ -60,7 +56,7 @@ private struct CustomTabBar: View {
                 selectedTab = .pantry
             }
 
-            // Raised button for scanning.
+            // Raised center button for scanning.
             Button {
                 selectedTab = .scan
             } label: {
@@ -95,14 +91,6 @@ private struct CustomTabBar: View {
                 isSelected: selectedTab == .cookbook
             ) {
                 selectedTab = .cookbook
-            }
-
-            TabBarItem(
-                title: "Shopping",
-                icon: "cart",
-                isSelected: selectedTab == .shopping
-            ) {
-                selectedTab = .shopping
             }
         }
         .padding(.horizontal, 24)
