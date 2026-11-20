@@ -34,6 +34,8 @@ struct EditItemView: View {
                     TextField("Item name", text: $name)
                     Stepper("Quantity: \(quantity)", value: $quantity, in: 1...99)
                 }
+                // White card background for each row.
+                .listRowBackground(Color.cozyCard)
 
                 Section("Storage") {
                     Picker("Category", selection: $category) {
@@ -48,6 +50,7 @@ struct EditItemView: View {
                         }
                     }
                 }
+                .listRowBackground(Color.cozyCard)
 
                 Section("Use By") {
                     UseByDateSection(
@@ -57,13 +60,19 @@ struct EditItemView: View {
                         storage: storage
                     )
                 }
+                .listRowBackground(Color.cozyCard)
 
                 if let barcode = item.barcode {
                     Section("Scanned product") {
                         LabeledContent("Barcode", value: barcode)
                     }
+                    .listRowBackground(Color.cozyCard)
                 }
             }
+            // Hides the default gray background.
+            .scrollContentBackground(.hidden)
+            // Puts the off-white color behind the whole screen.
+            .background(Color.cozyCream)
             .navigationTitle("Edit Item")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -75,6 +84,10 @@ struct EditItemView: View {
                 }
             }
         }
+        // Makes Cancel, Save, and the controls dark plum.
+        .tint(.cozyBrown)
+        // Keeps light mode on so the text stays readable on the off-white background.
+        .preferredColorScheme(.light)
     }
 
     private func save() {
