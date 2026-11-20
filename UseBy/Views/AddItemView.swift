@@ -70,7 +70,7 @@ struct AddItemView: View {
                 .font(.headline)
 
                 Text("Add to My Kitchen")
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .font(.system(.largeTitle, design: .default, weight: .bold))
                     .foregroundStyle(Color.cozyBrown)
 
                 CozySection(title: "What is it?") {

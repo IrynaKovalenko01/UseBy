@@ -63,7 +63,7 @@ struct ScanProductView: View {
                             .font(.system(size: 56))
                             .foregroundStyle(Color.cozyBrown)
                         Text("Barcode scanning isn't supported")
-                            .font(.system(.title2, design: .rounded, weight: .bold))
+                            .font(.system(.title2, design: .default, weight: .bold))
                         Text("Use a device that supports Live Text scanning to scan a product barcode.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
