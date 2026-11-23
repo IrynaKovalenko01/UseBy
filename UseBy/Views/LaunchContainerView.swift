@@ -7,6 +7,8 @@ struct LaunchContainerView: View {
         Group {
             if isLoading {
                 LoadingScreenView()
+                    // Identifies loading Screen
+                    .accessibilityIdentifier("loadingScreen")
                     .transition(.opacity)
             } else {
                 ContentView()

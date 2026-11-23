@@ -8,6 +8,11 @@ struct ItemDetailView: View {
     @State private var showingEdit = false
     // True after the item is added to the shopping list, so the button can't be tapped twice.
     @State private var addedToList = false
+    
+    // Confirms if user wants to remove item
+    @State private var showingDiscardConfirmation = false
+    
+    var onDiscardSuccess: () -> Void = {}
 
     // The large text in the cube: "!" if expired, otherwise the days left.
     private var countdownNumber: String {
@@ -85,7 +90,7 @@ struct ItemDetailView: View {
                 Button("Edit") {
                     showingEdit = true
                 }
-
+                
                 Button(addedToList ? "Added to Shopping List" : "Add to Shopping List") {
                     // Copies the pantry item's details into a shopping entry.
                     ShoppingItem.add(
@@ -101,11 +106,11 @@ struct ItemDetailView: View {
                     addedToList = true
                 }
                 .disabled(addedToList)
-
+                
                 Button("Discard", role: .destructive) {
-                    modelContext.delete(item)
-                    dismiss()
+                    showingDiscardConfirmation = true
                 }
+                .accessibilityIdentifier("discardButton")
             }
             .listRowBackground(Color.cozyCard)
         }
@@ -118,8 +123,33 @@ struct ItemDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         // Makes the Back and Edit buttons dark plum.
         .tint(.cozyBrown)
-        .sheet(isPresented: $showingEdit) {
-            EditItemView(item: item)
+        // Gives user a choice if such item wants to be removed
+        .alert(
+            "Discard \(item.name)?",
+            isPresented: $showingDiscardConfirmation
+        ) {
+            Button("Discard", role: .destructive) {
+                modelContext.delete(item)
+
+                do {
+                    try modelContext.save()
+                    onDiscardSuccess()
+                    dismiss()
+                } catch {
+                    modelContext.rollback()
+                    print("Failed to discard item: \(error)")
+                }
+                    
+            }
+                .accessibilityIdentifier("confirmDiscardButton")
+
+            Button("Cancel", role: .cancel) {
+                // Keep the item in the pantry
+            }
+                .accessibilityIdentifier("cancelDiscardButton")
+        } message: {
+            Text("Are you sure you want to discard this item?")
         }
+
     }
 }

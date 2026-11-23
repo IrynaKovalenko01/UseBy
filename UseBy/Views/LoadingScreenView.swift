@@ -28,6 +28,8 @@ struct LoadingScreenView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.cozyCream)
         .preferredColorScheme(.light)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("loadingScreen")
     }
 }
 
