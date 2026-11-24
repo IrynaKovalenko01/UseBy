@@ -1,6 +1,13 @@
 import SwiftUI
 import VisionKit
 
+/// One scanned barcode. Identifiable so the add-item sheet only opens
+/// once the barcode value is attached to it.
+struct ScannedCode: Identifiable {
+    let id = UUID()
+    let value: String
+}
+
 /// Hosts the barcode-entry workflow in the Scan tab.
 ///
 /// The workflow is intentionally two steps: VisionKit returns only a barcode
@@ -8,12 +15,9 @@ import VisionKit
 /// storage location, and expiry date in AddItemView. This view owns temporary
 /// scan-session state; it does not persist data itself.
 struct ScanProductView: View {
-    /// Holds the most recently tapped payload until the add-item sheet closes.
-    @State private var scannedBarcode = ""
-
-    /// Controls the add-item sheet. Keeping this separate from the barcode lets
-    /// the scanner remain visible behind the sheet and makes cancellation safe.
-    @State private var isPresentingAddItem = false
+    /// The tapped barcode. Setting it opens the add-item sheet with the
+    /// barcode attached, so AddItemView never receives an empty value.
+    @State private var scannedCode: ScannedCode?
 
     /// Recreating this ID creates a fresh UIKit scanner and coordinator after a
     /// sheet closes, because the previous coordinator deliberately stopped its
@@ -43,9 +47,8 @@ struct ScanProductView: View {
                     BarcodeScannerView(
                         onBarcode: { barcode in
                             // Accept a code only after the user taps its camera
-                            // highlight, then collect the remaining pantry details.
-                            scannedBarcode = barcode
-                            isPresentingAddItem = true
+                            // highlight. Setting scannedCode opens the sheet.
+                            scannedCode = ScannedCode(value: barcode)
                         },
                         onError: { scannerError = $0 }
                     )
@@ -85,9 +88,9 @@ struct ScanProductView: View {
             // Hides the default top bar because this screen has its own title.
             .toolbar(.hidden, for: .navigationBar)
             // Present the same form as manual entry, but attach the recognized
-            // payload so AddItemView writes it to PantryItem.barcode.
-            .sheet(isPresented: $isPresentingAddItem, onDismiss: resetScanner) {
-                AddItemView(scannedBarcode: scannedBarcode)
+            // payload so AddItemView looks it up and writes it to PantryItem.barcode.
+            .sheet(item: $scannedCode, onDismiss: resetScanner) { code in
+                AddItemView(scannedBarcode: code.value)
             }
             // Scanner start and availability errors are visible rather than
             // silently leaving a blank camera screen.
@@ -102,14 +105,12 @@ struct ScanProductView: View {
         }
     }
 
-    /// Clears one scan's transient data and forces a new VisionKit controller
-    /// for the next scan, whether the form was saved or cancelled.
+    /// Forces a new VisionKit controller for the next scan, whether the form
+    /// was saved or cancelled. The sheet clears scannedCode by itself.
     private func resetScanner() {
-        scannedBarcode = ""
         scannerSessionID = UUID()
     }
 }
-
 /// Bridges VisionKit's UIKit camera controller into SwiftUI.
 ///
 /// A recreation needs this representable because DataScannerViewController is a
