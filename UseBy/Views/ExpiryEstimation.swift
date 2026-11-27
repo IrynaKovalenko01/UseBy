@@ -143,13 +143,27 @@ enum ExpiryEstimation {
 
     private static func numericShelfLifeDays(in entry: FoodKeeperEntry, storage: StorageLocation) -> Int? {
         let location = fieldPrefix(for: storage)
+        // FoodKeeper field names vary slightly between dataset versions. Match
+        // normalized keys, and inspect both regular and DOP (date-of-purchase) data.
         for prefix in [location, "DOP_" + location] {
-            guard let amountText = entry.rawFields[prefix + "_Min"],
-                  let amount = firstNumber(in: amountText), amount > 0,
-                  let metric = entry.rawFields[prefix + "_Metric"]?.lowercased() else { continue }
-            if let days = convertToDays(amount, metric: metric) { return days }
+            let minText = rawValue(in: entry, key: prefix + "_Min")
+            let maxText = rawValue(in: entry, key: prefix + "_Max")
+            let metric = rawValue(in: entry, key: prefix + "_Metric")
+                ?? rawValue(in: entry, key: location + "_Metric")
+            guard let metric, let amountText = minText ?? maxText,
+                  let minimum = firstNumber(in: amountText), minimum > 0 else { continue }
+
+            let maximum = maxText.flatMap { firstNumber(in: $0) } ?? minimum
+            if let days = convertRangeToDays(minimum, max(minimum, maximum), metric: metric) {
+                return days
+            }
         }
         return nil
+    }
+
+    private static func rawValue(in entry: FoodKeeperEntry, key: String) -> String? {
+        let target = normalize(key)
+        return entry.rawFields.first(where: { normalize($0.key) == target })?.value
     }
 
     /// Handles guidance values such as "3-5 days" or "1 to 2 weeks".
@@ -176,17 +190,20 @@ enum ExpiryEstimation {
             return convertRangeToDays(first, second, metric: metric)
         }
         if let amount = value(at: 4), let metric = captureText(at: 5) {
-            return convertToDays(floor(amount), metric: metric)
+            return convertToDays(amount, metric: metric)
         }
         return nil
     }
 
     private static func selectedGuidance(in entry: FoodKeeperEntry, storage: StorageLocation) -> String? {
+        let field: String
+        let parsed: String?
         switch storage {
-        case .pantry: return entry.pantry ?? entry.rawFields["Pantry"]
-        case .fridge: return entry.refrigerator ?? entry.rawFields["Refrigerate"]
-        case .freezer: return entry.freezer ?? entry.rawFields["Freeze"]
+        case .pantry: field = "Pantry"; parsed = entry.pantry
+        case .fridge: field = "Refrigerate"; parsed = entry.refrigerator
+        case .freezer: field = "Freeze"; parsed = entry.freezer
         }
+        return parsed ?? rawValue(in: entry, key: field)
     }
 
     private static func firstNumber(in value: String) -> Double? {

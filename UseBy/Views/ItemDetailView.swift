@@ -123,6 +123,11 @@ struct ItemDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         // Makes the Back and Edit buttons dark plum.
         .tint(.cozyBrown)
+        
+        // Makes the Edit button interactible
+        .sheet(isPresented: $showingEdit) {
+            EditItemView(item: item)
+        }
         // Gives user a choice if such item wants to be removed
         .alert(
             "Discard \(item.name)?",
