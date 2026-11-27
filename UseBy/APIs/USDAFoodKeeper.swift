@@ -82,36 +82,46 @@ actor USDAFoodKeeperAPI {
         let term = productName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !term.isEmpty else { return nil }
         let entries = try await loadEntries()
-        let normalizedTerm = Self.normalize(term)
         let queryTokens = Self.tokens(in: term)
+        let normalizedQuery = Self.normalize(term)
+        guard !queryTokens.isEmpty else { return nil }
 
-        // Prefer exact product names. The old first-contains match could select
-        // an unrelated entry (for example, "buttermilk" for a query of "milk").
-        if let exact = entries.first(where: { Self.normalize($0.name) == normalizedTerm }) {
-            return exact
-        }
-
-        // Then accept simple singular/plural variations such as Avocado/Avocados.
-        if let pluralMatch = entries.first(where: {
-            let name = Self.normalize($0.name)
-            return name == normalizedTerm + "s" || normalizedTerm == name + "s" ||
-                   name == normalizedTerm + "es" || normalizedTerm == name + "es"
-        }) {
-            return pluralMatch
-        }
-
-        // Finally compare whole words, not arbitrary substrings. This avoids
-        // matching "apple" to "applesauce" or "milk" to "buttermilk".
-        return entries.first(where: { entry in
+        // Score all candidates instead of returning the first partial-token match.
+        // Exact names and entries containing all query tokens win; weak matches
+        // (e.g. "milk" matching "buttermilk") are deliberately rejected.
+        let ranked = entries.compactMap { entry -> (FoodKeeperEntry, Int)? in
+            let normalizedName = Self.normalize(entry.name)
             let nameTokens = Self.tokens(in: entry.name)
-            return queryTokens.contains { queryToken in
-                nameTokens.contains { nameToken in
-                    nameToken == queryToken || nameToken == queryToken + "s" || queryToken == nameToken + "s"
-                }
+            let querySet = Set(queryTokens)
+            let nameSet = Set(nameTokens)
+            let overlap = querySet.intersection(nameSet).count
+            guard overlap > 0 else { return nil }
+
+            var score = 0
+            if normalizedName == normalizedQuery {
+                score = 1000
+            } else if nameTokens == queryTokens {
+                score = 950
+            } else if querySet.isSubset(of: nameSet) {
+                score = 700 + queryTokens.count * 20
+            } else {
+                let overlapRatio = Double(overlap) / Double(queryTokens.count)
+                guard overlapRatio >= 0.6 else { return nil }
+                score = Int(overlapRatio * 400) + overlap * 30
             }
-        })
+
+            // Prefer a more specific entry when multiple candidates match.
+            score += min(nameTokens.count, 6) * 3
+            // Penalize extra qualifiers that are not in the user's query.
+            score -= max(0, nameTokens.count - queryTokens.count) * 5
+            return (entry, score)
+        }
+
+        guard let best = ranked.max(by: { $0.1 < $1.1 }),
+              best.1 >= 100 else { return nil }
+        return best.0
     }
-    
+
     private static func parseEntries(from data: Data) throws -> [FoodKeeperEntry] {
         let root: Any
         do {
