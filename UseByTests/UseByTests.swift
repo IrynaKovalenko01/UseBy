@@ -3,6 +3,7 @@
 import Testing
 import Foundation
 import SwiftData
+import SwiftUI
 @testable import UseBy
 
 @Suite("PantryItem urgency logic")
@@ -255,8 +256,8 @@ struct ExpirationDateWorkflowTests {
 }
 
 
-// Vaibhav - Shopping List tests
-// Shopping list coverage with in-memory SwiftData context
+// Shopping-list tests use an in-memory context to verify quantity fulfillment,
+// renamed items, add-back behavior, and form stability after deletion.
 @Suite("Shopping list fulfillment")
 struct ShoppingListTests {
 
@@ -275,12 +276,17 @@ struct ShoppingListTests {
         return Store(container: container, context: ModelContext(container))
     }
 
-    private func makePantryItem(name: String, quantity: Int = 1) -> PantryItem {
+    private func makePantryItem(
+        name: String,
+        quantity: Int = 1,
+        barcode: String? = nil
+    ) -> PantryItem {
         PantryItem(
             name: name,
             category: "Dairy",
             storage: .fridge,
             quantity: quantity,
+            barcode: barcode,
             expiryDate: Calendar.current.date(byAdding: .day, value: 7, to: .now)!
         )
     }
@@ -290,6 +296,7 @@ struct ShoppingListTests {
         return try context.fetch(FetchDescriptor<ShoppingItem>())
     }
 
+    /// Buying the requested amount removes the completed list entry.
     @Test func buyingFullQuantityRemovesShoppingItem() throws {
         let store = try makeStore()
         store.context.insert(ShoppingItem(name: "Milk", quantity: 2))
@@ -299,6 +306,61 @@ struct ShoppingListTests {
         #expect(try shoppingItems(in: store.context).isEmpty)
     }
 
+    /// The opt-in add-back choice recreates a list entry with the bought count.
+    @Test func choosingToAddBackRecreatesShoppingListItem() throws {
+        let store = try makeStore()
+        let linked = ShoppingItem(name: "Milk", quantity: 2)
+        store.context.insert(linked)
+
+        store.context.addToPantry(
+            makePantryItem(name: "Milk", quantity: 2),
+            from: linked,
+            addBackToShoppingList: true
+        )
+
+        let items = try shoppingItems(in: store.context)
+        #expect(items.count == 1)
+        #expect(items.first?.name == "Milk")
+        #expect(items.first?.quantity == 2)
+    }
+
+    /// A renamed linked entry remains, while a different matching entry is
+    /// still eligible to be fulfilled by the purchase.
+    @Test func renamedLinkedItemDoesNotFulfillShoppingItem() throws {
+        let store = try makeStore()
+        let linked = ShoppingItem(name: "Captain Crunch", quantity: 1, barcode: "123")
+        let matching = ShoppingItem(name: "Honey Nut Cheerios", quantity: 1)
+        store.context.insert(linked)
+        store.context.insert(matching)
+
+        store.context.addToPantry(
+            makePantryItem(name: "Honey Nut Cheerios", quantity: 1, barcode: "123"),
+            from: linked
+        )
+
+        let items = try shoppingItems(in: store.context)
+        #expect(items.count == 1)
+        #expect(items.first?.name == "Captain Crunch")
+    }
+
+    /// The add form can still build its body after fulfillment deletes the
+    /// SwiftData object it was originally opened with.
+    @Test func addFormBodyRemainsSafeAfterLinkedItemIsDeleted() throws {
+        let store = try makeStore()
+        let linked = ShoppingItem(name: "Milk", quantity: 2)
+        store.context.insert(linked)
+        let addItemView = AddItemView(shoppingItem: linked)
+
+        store.context.addToPantry(
+            makePantryItem(name: "Milk", quantity: 2),
+            from: linked
+        )
+
+        #expect(try shoppingItems(in: store.context).isEmpty)
+        _ = addItemView.body
+    }
+
+    /// Buying fewer units preserves the unpurchased quantity on the list.
     @Test func buyingPartialQuantityLeavesRemainderOnList() throws {
         let store = try makeStore()
         store.context.insert(ShoppingItem(name: "Milk", quantity: 3))
@@ -310,6 +372,7 @@ struct ShoppingListTests {
         #expect(items.first?.quantity == 2)
     }
 
+    /// Pantry adds unrelated to the list must not remove any list entries.
     @Test func itemNotOnShoppingListStillAddsToPantry() throws {
         let store = try makeStore()
         store.context.insert(ShoppingItem(name: "Bread", quantity: 1))
@@ -320,5 +383,86 @@ struct ShoppingListTests {
         let pantry = try store.context.fetch(FetchDescriptor<PantryItem>())
         #expect(pantry.count == 1)
         #expect(try shoppingItems(in: store.context).first?.name == "Bread")
+    }
+}
+
+@Suite("Calorie tracking")
+struct CalorieTrackingTests {
+
+    /// Verifies equation inputs, activity multiplier, goal adjustment, and
+    /// rounding together against a known adult example.
+    @Test func calculatesAdultDailyTargetFromProfile() {
+        let target = CalorieTargetCalculator.recommendedCalories(
+            age: 30,
+            heightCentimeters: 170,
+            weightKilograms: 70,
+            calculationSex: .female,
+            activityLevel: .moderatelyActive,
+            goal: .gradualWeightLoss
+        )
+
+        #expect(target == 1950)
+    }
+
+    /// The personalized estimate is intentionally unavailable for minors.
+    @Test func rejectsUnderageProfileForEstimatedTarget() {
+        let target = CalorieTargetCalculator.recommendedCalories(
+            age: 17,
+            heightCentimeters: 170,
+            weightKilograms: 70,
+            calculationSex: .female,
+            activityLevel: .moderatelyActive,
+            goal: .maintain
+        )
+
+        #expect(target == nil)
+    }
+
+    /// A manually entered target takes precedence while the estimate remains
+    /// available as a calculated value.
+    @Test func manualTargetOverridesPersonalizedEstimate() {
+        let profile = CalorieProfile(
+            age: 30,
+            heightCentimeters: 170,
+            weightKilograms: 70,
+            calculationSexRaw: CalorieCalculationSex.female.rawValue,
+            activityLevelRaw: CalorieActivityLevel.moderatelyActive.rawValue,
+            goalRaw: CalorieGoal.maintain.rawValue,
+            manualDailyTarget: 2100
+        )
+
+        #expect(profile.estimatedDailyTarget == 2250)
+        #expect(profile.recommendedDailyTarget == 2100)
+    }
+
+    /// Older meal entries do not contribute to the selected day's intake.
+    @Test func mealTotalsOnlyIncludeSelectedCalendarDay() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let meals = [
+            CalorieMeal(name: "Breakfast", calories: 400, consumedAt: today),
+            CalorieMeal(name: "Lunch", calories: 650, consumedAt: today),
+            CalorieMeal(name: "Yesterday", calories: 900, consumedAt: yesterday)
+        ]
+
+        #expect(CalorieMeal.totalCalories(in: meals, on: today) == 1050)
+    }
+
+    /// Offline recipe ideas stay under budget and are sorted toward its limit.
+    @Test func offlineRecipesStayWithinBudgetAndPreferClosestFit() {
+        let suggestions = OfflineCalorieRecipe.suggestions(fitting: 500)
+
+        #expect(suggestions.map(\.caloriesPerServing) == [450, 400, 300])
+    }
+
+    /// Spoonacular nutrition decoding finds and rounds its Calories nutrient.
+    @Test func readsCaloriesFromSpoonacularNutrition() throws {
+        let data = Data(
+            #"{"nutrients":[{"name":"Calories","amount":321.6,"unit":"kcal"}]}"#.utf8
+        )
+        let nutrition = try JSONDecoder().decode(SpoonacularNutrition.self, from: data)
+
+        #expect(nutrition.caloriesPerServing == 322)
     }
 }

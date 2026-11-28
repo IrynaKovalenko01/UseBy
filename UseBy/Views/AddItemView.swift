@@ -7,8 +7,14 @@ struct AddItemView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    /// Optional barcode from the scanner flow; otherwise inherited from the
+    /// selected shopping-list entry when one is being stocked.
     let scannedBarcode: String?
+    /// Non-nil only when this form was opened from a shopping-list row.
     let shoppingItem: ShoppingItem?
+    /// Snapshot the original requirement so the hint never reads a SwiftData
+    /// object after fulfillment deletes that object.
+    private let shoppingItemQuantity: Int?
 
     @State private var name = ""
     @State private var category = "Produce"
@@ -23,6 +29,9 @@ struct AddItemView: View {
     @State private var isLoadingProduct = false
     @State private var lookupMessage: String?
     @State private var canSaveExpiry = true
+    /// Defers saving a shopping-list purchase until the user chooses whether
+    /// to recreate its list entry.
+    @State private var showingShoppingListConfirmation = false
 
     private let categories = [
         "Produce", "Dairy", "Meat", "Bakery",
@@ -45,7 +54,10 @@ struct AddItemView: View {
     ) {
         self.scannedBarcode = scannedBarcode
         self.shoppingItem = shoppingItem
+        self.shoppingItemQuantity = shoppingItem?.quantity
 
+        // Pre-fill the form from a tapped shopping item; standalone add flows
+        // retain their normal defaults.
         if let shoppingItem {
             _name = State(initialValue: shoppingItem.name)
             _category = State(initialValue: shoppingItem.category)
@@ -134,8 +146,10 @@ struct AddItemView: View {
                         in: 1...99
                     )
 
-                    if let shoppingItem {
-                        Text(partialPurchaseHint(for: shoppingItem))
+                    if let shoppingItemQuantity {
+                        // Use the immutable quantity snapshot, not the live
+                        // model which may be deleted after saving.
+                        Text(partialPurchaseHint(for: shoppingItemQuantity))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -157,7 +171,13 @@ struct AddItemView: View {
         }
                 .safeAreaInset(edge: .bottom) {
             Button {
-                addItem()
+                // Ask only for shopping-list purchases. Scanner and regular
+                // pantry adds should continue to save immediately.
+                if shoppingItem != nil {
+                    showingShoppingListConfirmation = true
+                } else {
+                    addItem()
+                }
             } label: {
                 Text("Add to Kitchen")
                     .font(.headline)
@@ -174,6 +194,20 @@ struct AddItemView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 8)
             .background(Color.cozyCream)
+        }
+        .alert("Add back to Shopping List?", isPresented: $showingShoppingListConfirmation) {
+            // Both choices stock the pantry item; this choice also recreates
+            // the list entry after the original is fulfilled.
+            Button("Add to List") {
+                addItem(addBackToShoppingList: true)
+            }
+            // Preserve the usual completed-purchase behavior without
+            // recreating a list entry.
+            Button("Just Add to Pantry", role: .cancel) {
+                addItem()
+            }
+        } message: {
+            Text("Would you like to add \(trimmedName) back to your shopping list?")
         }
 
         .task(id: scannedBarcode) {
@@ -210,12 +244,12 @@ struct AddItemView: View {
     }
 
     // Handles partial purchases from the shopping list.
-    private func partialPurchaseHint(for item: ShoppingItem) -> String {
-        if quantity < item.quantity {
-            return "You need \(item.quantity). \(item.quantity - quantity) will stay on your shopping list."
+    private func partialPurchaseHint(for requiredQuantity: Int) -> String {
+        if quantity < requiredQuantity {
+            return "You need \(requiredQuantity). \(requiredQuantity - quantity) will stay on your shopping list."
         }
 
-        return "You need \(item.quantity). Buying fewer leaves the rest on your shopping list."
+        return "You need \(requiredQuantity). Buying fewer leaves the rest on your shopping list."
     }
 
     // Chooses the icon shown on each category button.
@@ -241,7 +275,7 @@ struct AddItemView: View {
     }
 
     // Inserts the pantry item and dismisses the sheet.
-    private func addItem() {
+    private func addItem(addBackToShoppingList: Bool = false) {
         let newItem = PantryItem(
             name: trimmedName,
             category: category,
@@ -251,7 +285,13 @@ struct AddItemView: View {
             expiryDate: expiryDate
         )
 
-        modelContext.addToPantry(newItem, from: shoppingItem)
+        // The model context inserts the pantry record, fulfills matching
+        // shopping quantities, and optionally adds the item back to the list.
+        modelContext.addToPantry(
+            newItem,
+            from: shoppingItem,
+            addBackToShoppingList: addBackToShoppingList
+        )
         dismiss()
     }
 

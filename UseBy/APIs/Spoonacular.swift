@@ -10,6 +10,8 @@ struct SpoonacularRecipeSearchResponse: Decodable {
     let totalResults: Int?
 }
 
+/// A recipe result; the optional nutrition field is included only when the
+/// search request asks Spoonacular to return nutrition data.
 struct SpoonacularRecipe: Decodable, Identifiable {
     let id: Int
     let title: String
@@ -23,12 +25,37 @@ struct SpoonacularRecipe: Decodable, Identifiable {
     let summary: String?
     let instructions: String?
     let sourceUrl: URL?
+    let nutrition: SpoonacularNutrition?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, image, summary, instructions, servings
+        case id, title, image, summary, instructions, servings, nutrition
         case usedIngredientCount, missedIngredientCount, usedIngredients, missedIngredients
         case readyInMinutes, sourceUrl
     }
+}
+
+/// The API returns nutrients by name; calories are extracted for budget checks
+/// and for logging a recipe serving.
+struct SpoonacularNutrition: Decodable {
+    let nutrients: [SpoonacularNutrient]?
+
+    /// Returns calories rounded to a whole kcal, ignoring missing or
+    /// non-positive values so callers can fall back to another suggestion.
+    var caloriesPerServing: Int? {
+        guard let calories = nutrients?.first(where: {
+            $0.name.caseInsensitiveCompare("Calories") == .orderedSame
+        })?.amount, calories > 0 else {
+            return nil
+        }
+        return Int(calories.rounded())
+    }
+}
+
+/// One nutrition value from the Spoonacular recipe response.
+struct SpoonacularNutrient: Decodable {
+    let name: String
+    let amount: Double
+    let unit: String?
 }
 
 struct SpoonacularIngredient: Decodable, Identifiable {
@@ -109,6 +136,47 @@ struct SpoonacularAPI {
         ])
         let data = try await APIHTTP.get(url: url, headers: ["x-api-key": try requireAPIKey()], session: session)
         return try APIHTTP.decode(SpoonacularRecipeSearchResponse.self, from: data)
+    }
+
+    /// Finds recipes that fit a remaining daily calorie budget and preferably
+    /// use pantry ingredients. Nutrition is requested so the UI can validate
+    /// the returned per-serving calories before displaying or logging a recipe.
+    func recipesForCalorieBudget(
+        pantryIngredients: [String],
+        maxCalories: Int,
+        number: Int = 5
+    ) async throws -> [SpoonacularRecipe] {
+        guard maxCalories > 0 else { return [] }
+
+        let cleanedIngredients = pantryIngredients
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        var query = [
+            URLQueryItem(name: "number", value: String(max(1, min(number, 20)))),
+            URLQueryItem(name: "addRecipeInformation", value: "true"),
+            URLQueryItem(name: "addRecipeNutrition", value: "true"),
+            URLQueryItem(name: "maxCalories", value: String(maxCalories)),
+            URLQueryItem(name: "sort", value: "calories"),
+            URLQueryItem(name: "sortDirection", value: "asc")
+        ]
+        if cleanedIngredients.isEmpty {
+            query.append(URLQueryItem(name: "query", value: "healthy meals"))
+        } else {
+            query.append(URLQueryItem(
+                name: "includeIngredients",
+                value: cleanedIngredients.joined(separator: ",")
+            ))
+        }
+
+        let url = try makeURL(path: "/recipes/complexSearch", query: query)
+        let data = try await APIHTTP.get(
+            url: url,
+            headers: ["x-api-key": try requireAPIKey()],
+            session: session
+        )
+        let response = try APIHTTP.decode(SpoonacularRecipeSearchResponse.self, from: data)
+        return response.results ?? []
     }
 
     /// Gets details, instructions, and ingredient information for a recipe ID.
