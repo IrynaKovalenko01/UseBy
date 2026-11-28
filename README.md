@@ -28,7 +28,7 @@ UseBy is an iPhone app that helps students and people in shared apartments use t
 ```
 UseBy/
 ├── UseBy/                     # App source code
-│   ├── Models/                # Data models (PantryItem)
+│   ├── Models/                # Pantry, shopping-list, and calorie data models
 │   ├── Views/                 # SwiftUI screens
 │   ├── ContentView.swift      # Main tab view
 │   └── UseByApp.swift         # App entry point
@@ -68,6 +68,7 @@ With an iPhone simulator selected, press play or run it with (Command + R). The 
 - **Scan Tab:** Barcode scanning needs a working iPhone camera with permissions enabled, if you're using the simulator just use manual entry.
 
 - **Cook Tab:** Reccipes on the website come from the Spoonacular API, which requires a API key (it's free). Get one paste it into the 'apiKey' in 'UseBy/APIs/Spoonacular.swift.' Without a key the cook tab will just show an error.
+- **Calories Tab:** Log meals manually or log a serving from a recipe suggestion. Set a manual daily target or estimate one for adults using profile details. Profile information and meal logs are stored on-device. Recipe ideas use Spoonacular nutrition when available, with clearly labeled approximate offline suggestions when it is not.
 
 ### How expiration estimates work
 

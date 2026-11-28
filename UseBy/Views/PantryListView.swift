@@ -210,7 +210,8 @@ struct PantryListView: View {
                                 
                             
                                 
-                                // Cart button that opens the shopping list.
+                                // Opens the shopping list inside this pantry
+                                // navigation stack so Back returns to the pantry.
                                 NavigationLink {
                                     ShoppingListView()
                                 } label: {

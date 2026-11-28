@@ -1,10 +1,12 @@
 import SwiftUI
 import SwiftData
 
-// The three screens the bottom bar switches between.
+// The app screens the bottom bar switches between.
 enum AppTab {
     case pantry
     case scan
+    /// Dedicated home for meal logs, calorie goals, and calorie-aware recipes.
+    case calories
     case cookbook
 }
 
@@ -25,6 +27,11 @@ struct ContentView: View {
             case .scan:
                 ScanProductView()
 
+            // The calorie tracker reads pantry contents and its own SwiftData
+            // profile/log models to build today's intake and recommendations.
+            case .calories:
+                CaloriesView()
+
             case .cookbook:
                 RecipeListView()
             }
@@ -41,8 +48,7 @@ struct ContentView: View {
     }
 }
 
-// The bottom bar: Pantry on the left, a raised Scan button in the middle,
-// and Cookbook on the right.
+// The bottom bar: Pantry and Calories, a raised Scan button, and Cookbook.
 private struct CustomTabBar: View {
     @Binding var selectedTab: AppTab
 
@@ -54,6 +60,16 @@ private struct CustomTabBar: View {
                 isSelected: selectedTab == .pantry
             ) {
                 selectedTab = .pantry
+            }
+
+            // Calorie tracking is a regular destination alongside Pantry and
+            // Cookbook; the raised Scan action stays in the center.
+            TabBarItem(
+                title: "Calories",
+                icon: "flame",
+                isSelected: selectedTab == .calories
+            ) {
+                selectedTab = .calories
             }
 
             // Raised center button for scanning.
@@ -181,5 +197,10 @@ struct ComingSoonView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [PantryItem.self, ShoppingItem.self], inMemory: true)
+        .modelContainer(for: [
+            PantryItem.self,
+            ShoppingItem.self,
+            CalorieMeal.self,
+            CalorieProfile.self
+        ], inMemory: true)
 }

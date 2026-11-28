@@ -11,9 +11,13 @@ import SwiftData
 @main
 struct UseByApp: App {
     var sharedModelContainer: ModelContainer = {
+        // Register each persisted feature model in the app's single store so
+        // meal logs and calorie preferences survive relaunches.
         let schema = Schema([
             PantryItem.self,
             ShoppingItem.self,
+            CalorieMeal.self,
+            CalorieProfile.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
