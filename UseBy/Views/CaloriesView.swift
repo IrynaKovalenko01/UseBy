@@ -484,7 +484,7 @@ private struct CalorieProfileEditor: View {
 
                 // Profile fields are optional as a group; partial data cannot
                 // produce an estimate and is rejected on save.
-                Section("Optional adult estimate") {
+                Section {
                     TextField("Age (18–100)", text: $ageText)
                         .keyboardType(.numberPad)
                     TextField("Height in cm", text: $heightText)
@@ -511,6 +511,8 @@ private struct CalorieProfileEditor: View {
                             Text(option.label).tag(option.rawValue)
                         }
                     }
+                } header: {
+                    Text("Optional adult estimate")
                 } footer: {
                     // Explain the equation's scope and the local-only handling
                     // of sensitive profile values before collection.
